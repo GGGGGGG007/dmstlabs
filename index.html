@@ -6,582 +6,258 @@
 <title>DrumMonster 견적</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #222222;
-    --border: #2e2e2e;
-    --accent: #e8ff00;
-    --accent2: #ff6b35;
-    --text: #f0f0f0;
-    --text2: #999;
-    --text3: #555;
-    --card-bg: #1e1e1e;
-    --radius: 10px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-  }
+:root {
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --surface2: #f0f0ee;
+  --border: #e2e2de;
+  --border2: #cececa;
+  --accent: #1a1a1a;
+  --orange: #e05c2a;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --blue-border: #bfdbfe;
+  --green: #16a34a;
+  --red: #dc2626;
+  --amber: #d97706;
+  --text: #1a1a1a;
+  --text2: #5a5a5a;
+  --text3: #aaa;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 
-  /* HEADER */
-  .header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 24px;
-    letter-spacing: 2px;
-    color: var(--accent);
-  }
-  .logo span { color: var(--text2); font-size: 13px; font-family: 'Noto Sans KR', sans-serif; letter-spacing: 0; margin-left: 12px; }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #4caf50;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  .count-badge {
-    font-size: 12px;
-    color: var(--text2);
-  }
+/* HEADER */
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.logo { font-family: 'Bebas Neue', sans-serif; font-size: 21px; letter-spacing: 2px; color: var(--text); }
+.logo em { color: var(--orange); font-style: normal; }
+.logo span { color: var(--text3); font-size: 11px; font-family: 'Noto Sans KR', sans-serif; letter-spacing: 0; margin-left: 10px; font-weight: 400; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.count-badge { font-size: 12px; color: var(--text2); }
 
-  .main { display: flex; height: calc(100vh - 56px); overflow: hidden; }
+/* TAB BAR */
+.tab-bar { background: var(--surface); border-bottom: 2px solid var(--border); padding: 0 20px; display: flex; align-items: center; gap: 0; position: sticky; top: 52px; z-index: 99; }
+.tab-btn { padding: 11px 20px; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; font-family: 'Noto Sans KR', sans-serif; background: none; border-top: none; border-left: none; border-right: none; }
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
 
-  /* LEFT PANEL - FILTERS + CARDS */
-  .left-panel {
-    width: 55%;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-  }
+/* LAYOUT */
+.main { display: flex; height: calc(100vh - 94px); overflow: hidden; }
 
-  /* FILTER SECTION */
-  .filter-section {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-  }
-  .filter-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  .filter-row:last-child { margin-bottom: 0; }
-  .filter-label {
-    font-size: 11px;
-    color: var(--text3);
-    min-width: 60px;
-    padding-top: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    flex: 1;
-  }
-  .chip {
-    padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'Noto Sans KR', sans-serif;
-    white-space: nowrap;
-  }
-  .chip:hover { border-color: var(--accent); color: var(--accent); }
-  .chip.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: 700;
-  }
-  .chip.brand-chip.active {
-    background: var(--accent2);
-    border-color: var(--accent2);
-    color: #fff;
-  }
+/* LEFT PANEL */
+.left-panel { width: 55%; display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: var(--bg); min-width: 0; }
 
-  /* PRICE SLIDER */
-  .slider-wrap {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .slider-range-display {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: var(--text2);
-  }
-  .slider-range-display strong { color: var(--accent); }
-  .range-slider-container {
-    position: relative;
-    height: 20px;
-    display: flex;
-    align-items: center;
-  }
-  .range-track {
-    position: absolute;
-    width: 100%;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-  }
-  .range-fill {
-    position: absolute;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 2px;
-  }
-  input[type=range] {
-    position: absolute;
-    width: 100%;
-    height: 3px;
-    background: transparent;
-    -webkit-appearance: none;
-    pointer-events: none;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid #000;
-    cursor: pointer;
-    pointer-events: all;
-  }
-  input[type=range]#priceMin { z-index: 3; }
-  input[type=range]#priceMax { z-index: 4; }
+/* FILTERS */
+.filter-section { padding: 12px 16px; border-bottom: 2px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.filter-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.filter-row:last-child { margin-bottom: 0; }
+.filter-label { font-size: 10px; color: var(--text3); min-width: 48px; padding-top: 5px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+.chip { padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: 'Noto Sans KR', sans-serif; white-space: nowrap; }
+.chip:hover { border-color: var(--blue); color: var(--blue); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.chip.brand-chip.active { background: var(--orange); border-color: var(--orange); color: #fff; }
 
-  /* PRODUCT GRID */
-  .products-header {
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .products-header span { font-size: 12px; color: var(--text2); }
-  .products-header strong { color: var(--accent); }
+/* SLIDER */
+.slider-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.slider-range-display { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); }
+.slider-range-display strong { color: var(--blue); font-weight: 700; }
+.range-slider-container { position: relative; height: 20px; display: flex; align-items: center; }
+.range-track { position: absolute; width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+.range-fill { position: absolute; height: 3px; background: var(--blue); border-radius: 2px; }
+input[type=range] { position: absolute; width: 100%; height: 3px; background: transparent; -webkit-appearance: none; pointer-events: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.18); cursor: pointer; pointer-events: all; }
+input[type=range]#priceMin { z-index: 3; }
+input[type=range]#priceMax { z-index: 4; }
 
-  .product-grid {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
-    align-content: start;
-  }
-  .product-grid::-webkit-scrollbar { width: 4px; }
-  .product-grid::-webkit-scrollbar-track { background: transparent; }
-  .product-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* PRODUCTS HEADER */
+.products-header { padding: 9px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: var(--surface); }
+.products-header span { font-size: 12px; color: var(--text2); }
+.products-header strong { color: var(--blue); font-weight: 700; }
+.pkg-hint { font-size: 11px; color: var(--text3); }
+.pkg-hint span { color: var(--blue); font-weight: 700; }
 
-  .product-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .product-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-  .product-card.selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent);
-  }
-  .card-img {
-    width: 100%;
-    height: 110px;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    position: relative;
-  }
-  .card-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .card-img .placeholder-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .card-img .placeholder-icon svg { opacity: 0.3; }
-  .card-img .placeholder-icon span {
-    font-size: 10px;
-    color: var(--text3);
-  }
-  .card-cat-badge {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 20px;
-    background: rgba(0,0,0,0.7);
-    color: var(--text2);
-  }
-  .card-body { padding: 10px; }
-  .card-brand { font-size: 10px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .card-name { font-size: 12px; color: var(--text); margin: 3px 0 6px; line-height: 1.4; }
-  .card-prices { display: flex; justify-content: space-between; align-items: baseline; }
-  .card-price { font-size: 13px; font-weight: 700; color: var(--text); }
-  .card-cost { font-size: 10px; color: var(--text3); }
+/* PRODUCT GRID */
+.product-grid { flex: 1; overflow-y: auto; padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; align-content: start; }
+.product-grid::-webkit-scrollbar { width: 3px; }
+.product-grid::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  /* SKELETON */
-  .skeleton-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    animation: shimmer 1.5s infinite;
-  }
-  .skeleton-img { width: 100%; height: 110px; background: var(--surface2); }
-  .skeleton-body { padding: 10px; }
-  .skeleton-line {
-    height: 10px;
-    background: var(--surface2);
-    border-radius: 4px;
-    margin-bottom: 6px;
-  }
-  .skeleton-line.short { width: 60%; }
-  @keyframes shimmer {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+/* CARD */
+.product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; }
+.product-card:hover { border-color: var(--blue); box-shadow: 0 3px 10px rgba(37,99,235,0.1); transform: translateY(-2px); }
+.product-card.selected { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.product-card.pkg-added { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
 
-  /* EMPTY STATE */
-  .empty-state {
-    grid-column: 1/-1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    color: var(--text3);
-    gap: 12px;
-  }
-  .empty-state svg { opacity: 0.3; }
-  .empty-state p { font-size: 13px; }
+.card-img { width: 100%; height: 100px; background: var(--surface2); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; flex-shrink: 0; border-radius: var(--radius) var(--radius) 0 0; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; }
+.placeholder-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.placeholder-icon span { font-size: 10px; color: var(--text3); }
+.card-cat-badge { position: absolute; top: 6px; left: 6px; font-size: 9px; padding: 2px 6px; border-radius: 20px; background: rgba(255,255,255,0.95); color: var(--text2); border: 1px solid var(--border); font-weight: 700; }
+.card-qty-badge { position: absolute; top: 6px; right: 6px; font-size: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 
-  /* RIGHT PANEL - ANALYSIS */
-  .right-panel {
-    width: 45%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .right-panel-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    flex-shrink: 0;
-  }
-  .right-panel-header h2 {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text2);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .right-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
-  .right-panel-body::-webkit-scrollbar { width: 4px; }
-  .right-panel-body::-webkit-scrollbar-track { background: transparent; }
-  .right-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.card-body { padding: 9px 10px 10px; display: flex; flex-direction: column; gap: 3px; }
+.card-brand { font-size: 10px; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-name { font-size: 12px; color: var(--text); line-height: 1.45; word-break: keep-all; overflow-wrap: break-word; }
+.card-divider { height: 1px; background: var(--border); margin: 5px 0 4px; }
+.card-price { font-size: 13px; font-weight: 700; color: var(--text); }
+.card-cost { font-size: 10px; color: var(--text3); margin-top: 1px; }
 
-  /* SELECTED PRODUCT INFO */
-  .selected-info {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 16px;
-  }
-  .selected-info .no-select {
-    color: var(--text3);
-    font-size: 13px;
-    text-align: center;
-    padding: 8px 0;
-  }
-  .selected-product-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .selected-product-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .meta-item label {
-    font-size: 10px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: block;
-    margin-bottom: 2px;
-  }
-  .meta-item span {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-  }
+/* SKELETON */
+.skeleton-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.skeleton-img { width: 100%; height: 100px; background: var(--surface2); }
+.skeleton-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.skeleton-line { height: 10px; background: var(--surface2); border-radius: 4px; animation: shimmer 1.5s infinite; }
+.skeleton-line.short { width: 55%; }
+@keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.45} }
+.empty-state { grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text3); gap:10px; }
+.empty-state p { font-size:13px; }
 
-  /* FORM SECTIONS */
-  .section-title {
-    font-size: 11px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-    margin-top: 16px;
-  }
+/* RIGHT PANEL */
+.right-panel { width: 45%; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); min-width: 0; }
+.right-panel-header { padding: 13px 18px; border-bottom: 2px solid var(--border); flex-shrink: 0; }
+.right-panel-header h2 { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+.right-panel-body { flex: 1; overflow-y: auto; padding: 0 18px; }
+.right-panel-body::-webkit-scrollbar { width: 3px; }
+.right-panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-  /* TOGGLE */
-  .toggle-group {
-    display: flex;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
-    margin-bottom: 12px;
-    gap: 3px;
-  }
-  .toggle-btn {
-    flex: 1;
-    padding: 7px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text2);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-  .toggle-btn.active {
-    background: var(--accent);
-    color: #000;
-    font-weight: 700;
-  }
+/* RIGHT SECTIONS */
+.rp-section { padding: 14px 0; border-bottom: 2px solid var(--border); }
+.rp-section:last-child { border-bottom: none; }
+.section-title { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.section-title::before { content: ''; display: inline-block; width: 3px; height: 11px; background: var(--blue); border-radius: 2px; }
+.section-title .badge { margin-left: auto; font-size: 10px; color: var(--blue); background: var(--blue-light); padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: none; letter-spacing: 0; }
 
-  /* INPUT ROW */
-  .input-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .input-group label {
-    font-size: 10px;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .input-group input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 7px 10px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: border 0.15s;
-    width: 100%;
-  }
-  .input-group input:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  .input-group input:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+/* SELECTED INFO */
+.selected-info { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.selected-info .no-select { color: var(--text3); font-size: 12px; text-align: center; padding: 6px 0; }
+.selected-product-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.4; word-break: keep-all; }
+.selected-product-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meta-item label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px; font-weight: 700; }
+.meta-item span { font-size: 13px; font-weight: 700; color: var(--text); }
+.meta-item span.price-val { color: var(--blue); }
+.meta-item span.cost-val { color: var(--orange); }
 
-  /* RESULT TABLE */
-  .result-table {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    margin-top: 16px;
-  }
-  .result-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .result-row:last-child { border-bottom: none; }
-  .result-row.highlight {
-    background: rgba(232,255,0,0.05);
-  }
-  .result-row.main-highlight {
-    background: rgba(232,255,0,0.1);
-    border-top: 1px solid rgba(232,255,0,0.3);
-  }
-  .result-label {
-    font-size: 12px;
-    color: var(--text2);
-  }
-  .result-value {
-    font-size: 13px;
-    color: var(--text);
-    font-weight: 500;
-  }
-  .result-row.main-highlight .result-label { color: var(--accent); font-weight: 700; }
-  .result-row.main-highlight .result-value { color: var(--accent); font-size: 16px; font-weight: 700; }
-  .result-value.positive { color: #4caf50; }
-  .result-value.negative { color: #f44336; }
-  .result-value.warning { color: var(--accent2); }
+/* PACKAGE LIST */
+.pkg-list { border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.pkg-empty { padding: 20px; text-align: center; font-size: 12px; color: var(--text3); }
+.pkg-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+.pkg-item:last-child { border-bottom: none; }
+.pkg-num { width: 20px; height: 20px; border-radius: 50%; background: var(--blue-light); color: var(--blue); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pkg-info { flex: 1; min-width: 0; }
+.pkg-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pkg-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.pkg-qty { font-size: 11px; font-weight: 700; color: var(--blue); background: var(--blue-light); padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+.pkg-price { font-size: 12px; font-weight: 700; color: var(--text); flex-shrink: 0; min-width: 72px; text-align: right; }
+.pkg-del { color: var(--text3); font-size: 16px; cursor: pointer; flex-shrink: 0; margin-left: 4px; line-height: 1; transition: color 0.15s; padding: 0 2px; }
+.pkg-del:hover { color: var(--red); }
 
-  /* PROFIT METER */
-  .profit-meter {
-    margin-top: 12px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-  }
-  .profit-meter-label {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 12px;
-  }
-  .profit-meter-label span { color: var(--text2); }
-  .profit-meter-label strong { color: var(--accent); }
-  .meter-bar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .meter-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    transition: width 0.4s ease;
-  }
+.pkg-summary { background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 13px; margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pkg-sum-item label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: block; margin-bottom: 2px; }
+.pkg-sum-item span { font-size: 13px; font-weight: 700; }
+.pkg-sum-item span.b { color: var(--blue); }
+.pkg-sum-item span.o { color: var(--orange); }
 
-  /* LOADING OVERLAY */
-  .loading-overlay {
-    position: absolute;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    z-index: 200;
-  }
-  .loading-logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    color: var(--accent);
-    letter-spacing: 3px;
-  }
-  .loading-bar-wrap {
-    width: 200px;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .loading-bar {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    animation: loading 1.5s ease-in-out infinite;
-  }
-  @keyframes loading {
-    0% { width: 0; margin-left: 0; }
-    50% { width: 60%; margin-left: 20%; }
-    100% { width: 0; margin-left: 100%; }
-  }
-  .loading-text {
-    font-size: 12px;
-    color: var(--text3);
-  }
+/* MODE BUTTONS */
+.mode-buttons { display: flex; gap: 7px; margin-bottom: 10px; }
+.mode-btn { flex: 1; padding: 8px 6px; border: 1.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: 'Noto Sans KR', sans-serif; font-weight: 500; text-align: center; line-height: 1.3; }
+.mode-btn small { display: block; font-size: 10px; color: var(--text3); margin-top: 1px; font-weight: 400; }
+.mode-btn:hover { border-color: var(--blue); color: var(--blue); }
+.mode-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 700; }
+.mode-btn.active small { color: rgba(255,255,255,0.75); }
 
-  .hidden { display: none !important; }
+/* INPUTS */
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; }
+.input-group label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+.input-group input { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; color: var(--text); font-size: 13px; font-family: 'Noto Sans KR', sans-serif; transition: border 0.15s; width: 100%; }
+.input-group input:focus { outline: none; border-color: var(--blue); }
+.input-group input:disabled { opacity: 0.3; cursor: not-allowed; background: var(--surface2); }
+.input-group input.active-input { border-color: var(--blue); background: var(--blue-light); }
 
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); }
+/* RESULT TABLE */
+.result-table { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.result-row:last-child { border-bottom: none; }
+.result-row.highlight { background: #fafaf8; }
+.result-row.main-highlight { background: var(--blue-light); border-left: 3px solid var(--blue); }
+.result-label { font-size: 12px; color: var(--text2); }
+.result-value { font-size: 13px; color: var(--text); font-weight: 500; }
+.result-row.main-highlight .result-label { color: var(--blue); font-weight: 700; }
+.result-row.main-highlight .result-value { color: var(--blue); font-size: 16px; font-weight: 700; }
+.result-value.positive { color: var(--green); font-weight: 700; }
+.result-value.negative { color: var(--red); font-weight: 700; }
+.result-value.warning { color: var(--amber); font-weight: 700; }
+
+/* PROFIT METER */
+.profit-meter { margin-top: 8px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.profit-meter-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+.profit-meter-label span { color: var(--text2); font-weight: 700; }
+.meter-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--blue), var(--green)); transition: width 0.4s ease; }
+
+/* LOADING */
+.loading-overlay { position: fixed; inset: 0; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 200; }
+.loading-logo { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); letter-spacing: 3px; }
+.loading-logo em { color: var(--orange); font-style: normal; }
+.loading-bar-wrap { width: 160px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.loading-bar { height: 100%; background: var(--blue); animation: loadbar 1.4s ease-in-out infinite; }
+@keyframes loadbar { 0%{width:0;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0;margin-left:100%} }
+.loading-text { font-size: 12px; color: var(--text3); }
+.hidden { display: none !important; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .main { flex-direction: column; height: auto; overflow: auto; }
+  .left-panel { width: 100%; border-right: none; border-bottom: 2px solid var(--border); height: auto; overflow: visible; }
+  .right-panel { width: 100%; overflow: visible; }
+  .product-grid { max-height: 420px; overflow-y: auto; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .right-panel-body { overflow: visible; }
+}
+@media (max-width: 768px) {
+  .header { padding: 0 14px; }
+  .logo span { display: none; }
+  .tab-bar { padding: 0 14px; }
+  .filter-section { padding: 10px 12px; }
+  .filter-row { flex-direction: column; gap: 5px; }
+  .filter-label { min-width: auto; padding-top: 0; }
+  .product-grid { padding: 10px 12px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; max-height: 360px; }
+  .right-panel-body { padding: 0 14px; }
+  .input-grid { grid-template-columns: 1fr; }
+  .mode-buttons { gap: 5px; }
+  .mode-btn { padding: 7px 4px; font-size: 11px; }
+  .mode-btn small { font-size: 9px; }
+  .result-row { padding: 8px 12px; }
+  .result-row.main-highlight .result-value { font-size: 14px; }
+}
+@media (max-width: 480px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); max-height: 300px; }
+  .card-img { height: 80px; }
+}
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-logo">DRUMMONSTER</div>
+  <div class="loading-logo">DRUM<em>MONSTER</em></div>
   <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
   <div class="loading-text">상품 데이터 불러오는 중...</div>
 </div>
 
 <div class="header">
-  <div style="display:flex;align-items:center;">
-    <div class="logo">DRUMMONSTER <span>견적 시스템</span></div>
-  </div>
+  <div class="logo">DRUM<em>MONSTER</em> <span>견적 시스템</span></div>
   <div class="header-right">
     <div class="status-dot" id="statusDot"></div>
     <div class="count-badge" id="countBadge">로딩 중...</div>
   </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabSingle" onclick="switchTab('single')">단품</button>
+  <button class="tab-btn" id="tabPackage" onclick="switchTab('package')">패키지</button>
 </div>
 
 <div class="main">
@@ -594,7 +270,7 @@
       </div>
       <div class="filter-row">
         <div class="filter-label">서브</div>
-        <div class="chips" id="subcategoryChips"><span style="font-size:12px;color:var(--text3);">카테고리 선택 시 표시</span></div>
+        <div class="chips" id="subcategoryChips"><span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span></div>
       </div>
       <div class="filter-row">
         <div class="filter-label">브랜드</div>
@@ -616,102 +292,139 @@
         </div>
       </div>
     </div>
-
     <div class="products-header">
       <span>상품 <strong id="filteredCount">0</strong>개</span>
-      <span id="filterSummary" style="font-size:11px;color:var(--text3);"></span>
+      <span id="productsHeaderRight" class="pkg-hint"></span>
     </div>
-
     <div class="product-grid" id="productGrid">
-      <!-- skeleton -->
-      ${Array(8).fill(`
-      <div class="skeleton-card">
-        <div class="skeleton-img"></div>
-        <div class="skeleton-body">
-          <div class="skeleton-line short"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>`).join('')}
+      ${Array(8).fill(`<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line short"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>`).join('')}
     </div>
   </div>
 
   <!-- RIGHT -->
   <div class="right-panel">
     <div class="right-panel-header">
-      <h2>판매가 설정 &amp; 수익 분석</h2>
+      <h2 id="rightPanelTitle">판매가 설정 &amp; 수익 분석</h2>
     </div>
-    <div class="right-panel-body">
+    <div class="right-panel-body" id="rightPanelBody">
 
-      <div class="selected-info" id="selectedInfo">
-        <div class="no-select">← 상품 카드를 클릭하면 수익 분석이 시작됩니다</div>
-      </div>
-
-      <div class="section-title">설정 방식</div>
-      <div class="toggle-group">
-        <button class="toggle-btn active" id="btnDiscount" onclick="setMode('discount')">할인율</button>
-        <button class="toggle-btn" id="btnDirect" onclick="setMode('direct')">직접 입력</button>
-      </div>
-
-      <div class="input-grid">
-        <div class="input-group">
-          <label>할인율 (%)</label>
-          <input type="number" id="discountRate" value="0" min="0" max="100" oninput="calculate()">
+      <!-- 단품 패널 -->
+      <div id="singlePanel">
+        <div class="rp-section">
+          <div class="section-title">선택 상품</div>
+          <div class="selected-info" id="selectedInfo">
+            <div class="no-select">← 상품 카드를 클릭하면 수익 분석이 시작됩니다</div>
+          </div>
         </div>
-        <div class="input-group">
-          <label>직접 입력 (원)</label>
-          <input type="number" id="directPrice" value="0" min="0" oninput="calculate()" disabled>
+        <div class="rp-section">
+          <div class="section-title">판매가 설정</div>
+          <div class="mode-buttons">
+            <button class="mode-btn active" id="btnDiscount" onclick="setMode('discount')">할인율<small>소매가 기준</small></button>
+            <button class="mode-btn" id="btnMargin" onclick="setMode('margin')">마진율<small>원가 기준</small></button>
+            <button class="mode-btn" id="btnDirect" onclick="setMode('direct')">직접입력<small>금액 지정</small></button>
+          </div>
+          <div class="input-grid">
+            <div class="input-group"><label>할인율 (%)</label><input type="number" id="discountRate" value="0" min="0" max="100" oninput="calculate()"></div>
+            <div class="input-group"><label>마진율 (%)</label><input type="number" id="marginRate" value="0" min="0" oninput="calculate()" disabled></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>직접 입력 (원)</label><input type="number" id="directPrice" value="0" min="0" oninput="calculate()" disabled></div>
+          </div>
         </div>
-      </div>
-
-      <div class="section-title">비용 설정</div>
-      <div class="input-grid">
-        <div class="input-group">
-          <label>판매 수수료 (%)</label>
-          <input type="number" id="feeRate" value="7" min="0" max="100" oninput="calculate()">
+        <div class="rp-section">
+          <div class="section-title">비용 설정</div>
+          <div class="input-grid">
+            <div class="input-group"><label>수수료 (%)</label><input type="number" id="feeRate" value="7" min="0" max="100" oninput="calculate()"></div>
+            <div class="input-group"><label>기타 비용 (원)</label><input type="number" id="etcCost" value="500" min="0" oninput="calculate()"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group"><label>무료배송 기준 (원)</label><input type="number" id="freeShipping" value="60000" min="0" oninput="calculate()"></div>
+            <div class="input-group"><label>배송비 (원)</label><input type="number" id="shippingCost" value="3000" min="0" oninput="calculate()"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>목표 수익률 (%)</label><input type="number" id="targetMargin" value="0" min="0" max="100" oninput="calculate()"></div>
+          </div>
         </div>
-        <div class="input-group">
-          <label>기타 비용 (원)</label>
-          <input type="number" id="etcCost" value="500" min="0" oninput="calculate()">
+        <div class="rp-section">
+          <div class="section-title">수익 분석</div>
+          <div class="result-table">
+            <div class="result-row"><span class="result-label">정상 소매가</span><span class="result-value" id="rRetail">-</span></div>
+            <div class="result-row main-highlight"><span class="result-label">최종 판매가</span><span class="result-value" id="rFinal">-</span></div>
+            <div class="result-row"><span class="result-label">원가</span><span class="result-value" id="rCost">-</span></div>
+            <div class="result-row"><span class="result-label">수수료</span><span class="result-value" id="rFee">-</span></div>
+            <div class="result-row"><span class="result-label">배송비</span><span class="result-value" id="rShipping">-</span></div>
+            <div class="result-row"><span class="result-label">기타 비용</span><span class="result-value" id="rEtc">-</span></div>
+            <div class="result-row highlight"><span class="result-label">총 비용</span><span class="result-value" id="rTotal">-</span></div>
+            <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">순 수익</span><span class="result-value" id="rProfit">-</span></div>
+            <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">수익률</span><span class="result-value" id="rMargin">-</span></div>
+            <div class="result-row"><span class="result-label">목표 달성 최소 판매가</span><span class="result-value" id="rMinPrice">-</span></div>
+          </div>
+          <div class="profit-meter">
+            <div class="profit-meter-label"><span>수익률</span><strong id="meterPct" style="color:var(--blue);">0%</strong></div>
+            <div class="meter-bar"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+          </div>
         </div>
-      </div>
-      <div class="input-grid">
-        <div class="input-group">
-          <label>무료배송 기준 (원)</label>
-          <input type="number" id="freeShipping" value="60000" min="0" oninput="calculate()">
-        </div>
-        <div class="input-group">
-          <label>배송비 (원)</label>
-          <input type="number" id="shippingCost" value="3000" min="0" oninput="calculate()">
-        </div>
-      </div>
-      <div class="input-grid">
-        <div class="input-group" style="grid-column:1/-1;">
-          <label>목표 수익률 (%)</label>
-          <input type="number" id="targetMargin" value="0" min="0" max="100" oninput="calculate()">
-        </div>
-      </div>
-
-      <div class="result-table" id="resultTable">
-        <div class="result-row"><span class="result-label">정상 소매가</span><span class="result-value" id="rRetail">-</span></div>
-        <div class="result-row main-highlight"><span class="result-label">최종 판매가</span><span class="result-value" id="rFinal">-</span></div>
-        <div class="result-row"><span class="result-label">원가</span><span class="result-value" id="rCost">-</span></div>
-        <div class="result-row"><span class="result-label">판매 수수료</span><span class="result-value" id="rFee">-</span></div>
-        <div class="result-row"><span class="result-label">배송비 부담</span><span class="result-value" id="rShipping">-</span></div>
-        <div class="result-row"><span class="result-label">기타 비용</span><span class="result-value" id="rEtc">-</span></div>
-        <div class="result-row highlight"><span class="result-label">총 비용</span><span class="result-value" id="rTotal">-</span></div>
-        <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">순 수익</span><span class="result-value" id="rProfit">-</span></div>
-        <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">수익률</span><span class="result-value" id="rMargin">-</span></div>
-        <div class="result-row"><span class="result-label">목표 달성 최소 판매가</span><span class="result-value" id="rMinPrice">-</span></div>
       </div>
 
-      <div class="profit-meter" id="profitMeter">
-        <div class="profit-meter-label">
-          <span>수익률</span>
-          <strong id="meterPct">0%</strong>
+      <!-- 패키지 패널 -->
+      <div id="packagePanel" class="hidden">
+        <div class="rp-section">
+          <div class="section-title">패키지 구성 <span class="badge" id="pkgCountBadge">0개 상품</span></div>
+          <div class="pkg-list" id="pkgList">
+            <div class="pkg-empty">← 상품 카드를 클릭해서 패키지에 추가하세요</div>
+          </div>
+          <div class="pkg-summary" id="pkgSummary" style="display:none;">
+            <div class="pkg-sum-item"><label>소매가 합계</label><span class="b" id="pkgRetailSum">-</span></div>
+            <div class="pkg-sum-item"><label>원가 합계</label><span class="o" id="pkgCostSum">-</span></div>
+          </div>
         </div>
-        <div class="meter-bar">
-          <div class="meter-fill" id="meterFill" style="width:0%"></div>
+        <div class="rp-section">
+          <div class="section-title">판매가 설정</div>
+          <div class="mode-buttons">
+            <button class="mode-btn active" id="pkgBtnDiscount" onclick="setPkgMode('discount')">할인율<small>소매가 기준</small></button>
+            <button class="mode-btn" id="pkgBtnMargin" onclick="setPkgMode('margin')">마진율<small>원가 기준</small></button>
+            <button class="mode-btn" id="pkgBtnDirect" onclick="setPkgMode('direct')">직접입력<small>금액 지정</small></button>
+          </div>
+          <div class="input-grid">
+            <div class="input-group"><label>할인율 (%)</label><input type="number" id="pkgDiscountRate" value="0" min="0" max="100" oninput="calculatePkg()"></div>
+            <div class="input-group"><label>마진율 (%)</label><input type="number" id="pkgMarginRate" value="0" min="0" oninput="calculatePkg()" disabled></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>직접 입력 (원)</label><input type="number" id="pkgDirectPrice" value="0" min="0" oninput="calculatePkg()" disabled></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="section-title">비용 설정</div>
+          <div class="input-grid">
+            <div class="input-group"><label>수수료 (%)</label><input type="number" id="pkgFeeRate" value="7" min="0" max="100" oninput="calculatePkg()"></div>
+            <div class="input-group"><label>기타 비용 (원)</label><input type="number" id="pkgEtcCost" value="500" min="0" oninput="calculatePkg()"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group"><label>무료배송 기준 (원)</label><input type="number" id="pkgFreeShipping" value="60000" min="0" oninput="calculatePkg()"></div>
+            <div class="input-group"><label>배송비 (원)</label><input type="number" id="pkgShippingCost" value="3000" min="0" oninput="calculatePkg()"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>목표 수익률 (%)</label><input type="number" id="pkgTargetMargin" value="0" min="0" max="100" oninput="calculatePkg()"></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="section-title">수익 분석</div>
+          <div class="result-table">
+            <div class="result-row"><span class="result-label">소매가 합계</span><span class="result-value" id="pkgRRetail">-</span></div>
+            <div class="result-row main-highlight"><span class="result-label">최종 판매가</span><span class="result-value" id="pkgRFinal">-</span></div>
+            <div class="result-row"><span class="result-label">원가 합계</span><span class="result-value" id="pkgRCost">-</span></div>
+            <div class="result-row"><span class="result-label">수수료</span><span class="result-value" id="pkgRFee">-</span></div>
+            <div class="result-row"><span class="result-label">배송비</span><span class="result-value" id="pkgRShipping">-</span></div>
+            <div class="result-row"><span class="result-label">기타 비용</span><span class="result-value" id="pkgREtc">-</span></div>
+            <div class="result-row highlight"><span class="result-label">총 비용</span><span class="result-value" id="pkgRTotal">-</span></div>
+            <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">순 수익</span><span class="result-value" id="pkgRProfit">-</span></div>
+            <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">수익률</span><span class="result-value" id="pkgRMargin">-</span></div>
+            <div class="result-row"><span class="result-label">목표 달성 최소 판매가</span><span class="result-value" id="pkgRMinPrice">-</span></div>
+          </div>
+          <div class="profit-meter">
+            <div class="profit-meter-label"><span>수익률</span><strong id="pkgMeterPct" style="color:var(--blue);">0%</strong></div>
+            <div class="meter-bar"><div class="meter-fill" id="pkgMeterFill" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
 
@@ -721,26 +434,38 @@
 
 <script>
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycby7Km6iGD4kyucDnXozTRhi3Dosx1SWPH8Mo7dEZb-d6Oyw-z0MGzkbchDW8Z9Zbma7bg/exec';
+let allProducts = [], filteredProducts = [], selectedProduct = null;
+let mode = 'discount', pkgMode = 'discount';
+let tabMode = 'single'; // 'single' | 'package'
+let packageItems = []; // { product, qty }
+let filters = { category: null, subcategory: null, brand: null, priceMin: 0, priceMax: Infinity };
 
-let allProducts = [];
-let filteredProducts = [];
-let selectedProduct = null;
-let mode = 'discount';
-
-// FILTERS STATE
-let filters = {
-  category: null,
-  subcategory: null,
-  brand: null,
-  priceMin: 0,
-  priceMax: Infinity
-};
-
-// FORMAT
 const fmt = n => n == null ? '-' : Math.round(n).toLocaleString('ko-KR') + '원';
 const fmtPct = n => n == null ? '-' : n.toFixed(1) + '%';
 
-// LOAD DATA
+/* ── TAB ── */
+function switchTab(t) {
+  tabMode = t;
+  document.getElementById('tabSingle').classList.toggle('active', t === 'single');
+  document.getElementById('tabPackage').classList.toggle('active', t === 'package');
+  document.getElementById('singlePanel').classList.toggle('hidden', t !== 'single');
+  document.getElementById('packagePanel').classList.toggle('hidden', t !== 'package');
+  document.getElementById('rightPanelTitle').innerHTML = t === 'single' ? '판매가 설정 &amp; 수익 분석' : '패키지 견적';
+  updateProductsHeader();
+  renderProducts();
+}
+
+function updateProductsHeader() {
+  const el = document.getElementById('productsHeaderRight');
+  if (tabMode === 'package') {
+    const total = packageItems.reduce((s, i) => s + i.qty, 0);
+    el.innerHTML = total > 0 ? `패키지 <span>${total}개</span> 선택됨` : '카드 클릭으로 추가';
+  } else {
+    el.textContent = '';
+  }
+}
+
+/* ── DATA ── */
 async function loadData() {
   try {
     const res = await fetch(SHEET_URL);
@@ -752,88 +477,50 @@ async function loadData() {
     document.getElementById('countBadge').textContent = `전체 ${allProducts.length}개 상품`;
   } catch(e) {
     document.getElementById('loadingOverlay').querySelector('.loading-text').textContent = '데이터 로드 실패. 새로고침 해주세요.';
-    document.getElementById('statusDot').style.background = '#f44336';
+    document.getElementById('statusDot').style.background = '#dc2626';
   }
 }
 
 function initFilters() {
-  // Category chips
   const cats = [...new Set(allProducts.map(p => p.category))].filter(Boolean);
-  const catEl = document.getElementById('categoryChips');
-  catEl.innerHTML = cats.map(c =>
-    `<button class="chip" onclick="toggleFilter('category','${c}',this)">${c}</button>`
-  ).join('');
-
-  // Brand chips (all initially)
+  document.getElementById('categoryChips').innerHTML = cats.map(c =>
+    `<button class="chip" onclick="toggleFilter('category','${c}',this)">${c}</button>`).join('');
   renderBrandChips(allProducts);
-
-  // Price slider
   const prices = allProducts.map(p => Number(p.price)).filter(Boolean);
-  const minP = Math.min(...prices);
-  const maxP = Math.max(...prices);
-  filters.priceMin = minP;
-  filters.priceMax = maxP;
+  const minP = Math.min(...prices), maxP = Math.max(...prices);
+  filters.priceMin = minP; filters.priceMax = maxP;
   updateSlider(minP, maxP, minP, maxP);
 }
 
 function renderBrandChips(products) {
   const brands = [...new Set(products.map(p => p.brand))].filter(Boolean).sort();
-  const el = document.getElementById('brandChips');
-  el.innerHTML = brands.map(b =>
-    `<button class="chip brand-chip ${filters.brand === b ? 'active' : ''}" onclick="toggleFilter('brand','${b}',this)">${b}</button>`
-  ).join('');
+  document.getElementById('brandChips').innerHTML = brands.map(b =>
+    `<button class="chip brand-chip ${filters.brand === b ? 'active' : ''}" onclick="toggleFilter('brand','${b}',this)">${b}</button>`).join('');
 }
 
 function renderSubcategoryChips(products) {
   const subs = [...new Set(products.map(p => p.subcategory))].filter(Boolean);
   const el = document.getElementById('subcategoryChips');
-  if (subs.length === 0) {
-    el.innerHTML = '<span style="font-size:12px;color:var(--text3);">카테고리 선택 시 표시</span>';
-    return;
-  }
+  if (!subs.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>'; return; }
   el.innerHTML = subs.map(s =>
-    `<button class="chip ${filters.subcategory === s ? 'active' : ''}" onclick="toggleFilter('subcategory','${s}',this)">${s}</button>`
-  ).join('');
+    `<button class="chip ${filters.subcategory === s ? 'active' : ''}" onclick="toggleFilter('subcategory','${s}',this)">${s}</button>`).join('');
 }
 
 function toggleFilter(type, value, el) {
-  if (filters[type] === value) {
-    filters[type] = null;
-    el.classList.remove('active');
-  } else {
-    // deactivate others of same type
-    const parent = el.parentElement;
-    parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    filters[type] = value;
-    el.classList.add('active');
-  }
-
-  // If category changed, reset subcategory
+  if (filters[type] === value) { filters[type] = null; el.classList.remove('active'); }
+  else { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); filters[type] = value; el.classList.add('active'); }
   if (type === 'category') {
     filters.subcategory = null;
-    const catFiltered = filters.category
-      ? allProducts.filter(p => p.category === filters.category)
-      : allProducts;
-    renderSubcategoryChips(catFiltered);
-    renderBrandChips(catFiltered);
-
-    // Update price range
-    const prices = catFiltered.map(p => Number(p.price)).filter(Boolean);
-    if (prices.length) {
-      const minP = Math.min(...prices);
-      const maxP = Math.max(...prices);
-      filters.priceMin = minP;
-      filters.priceMax = maxP;
-      updateSlider(minP, maxP, minP, maxP);
-    }
+    const cf = filters.category ? allProducts.filter(p => p.category === filters.category) : allProducts;
+    renderSubcategoryChips(cf); renderBrandChips(cf);
+    const prices = cf.map(p => Number(p.price)).filter(Boolean);
+    if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
   }
-
   applyFilters();
 }
 
 function updateSlider(absMin, absMax, curMin, curMax) {
-  const minEl = document.getElementById('priceMin');
-  const maxEl = document.getElementById('priceMax');
+  const minEl = document.getElementById('priceMin'), maxEl = document.getElementById('priceMax');
   minEl.min = absMin; minEl.max = absMax; minEl.value = curMin;
   maxEl.min = absMin; maxEl.max = absMax; maxEl.value = curMax;
   updateSliderUI(absMin, absMax, curMin, curMax);
@@ -843,30 +530,26 @@ function updateSlider(absMin, absMax, curMin, curMax) {
 
 function updateSliderUI(absMin, absMax, curMin, curMax) {
   const range = absMax - absMin || 1;
-  const leftPct = ((curMin - absMin) / range) * 100;
-  const rightPct = ((curMax - absMin) / range) * 100;
-  document.getElementById('rangeFill').style.left = leftPct + '%';
-  document.getElementById('rangeFill').style.width = (rightPct - leftPct) + '%';
+  const lp = ((curMin - absMin) / range) * 100, rp = ((curMax - absMin) / range) * 100;
+  document.getElementById('rangeFill').style.left = lp + '%';
+  document.getElementById('rangeFill').style.width = (rp - lp) + '%';
 }
 
-// Slider events
 document.getElementById('priceMin').addEventListener('input', function() {
-  const minEl = this;
   const maxEl = document.getElementById('priceMax');
-  if (Number(minEl.value) > Number(maxEl.value)) minEl.value = maxEl.value;
-  filters.priceMin = Number(minEl.value);
+  if (Number(this.value) > Number(maxEl.value)) this.value = maxEl.value;
+  filters.priceMin = Number(this.value);
   document.getElementById('minDisplay').textContent = Math.round(filters.priceMin).toLocaleString('ko-KR');
-  updateSliderUI(Number(minEl.min), Number(minEl.max), Number(minEl.value), Number(maxEl.value));
+  updateSliderUI(Number(this.min), Number(this.max), Number(this.value), Number(maxEl.value));
   applyFilters();
 });
 
 document.getElementById('priceMax').addEventListener('input', function() {
-  const maxEl = this;
   const minEl = document.getElementById('priceMin');
-  if (Number(maxEl.value) < Number(minEl.value)) maxEl.value = minEl.value;
-  filters.priceMax = Number(maxEl.value);
+  if (Number(this.value) < Number(minEl.value)) this.value = minEl.value;
+  filters.priceMax = Number(this.value);
   document.getElementById('maxDisplay').textContent = Math.round(filters.priceMax).toLocaleString('ko-KR');
-  updateSliderUI(Number(minEl.min), Number(minEl.max), Number(minEl.value), Number(maxEl.value));
+  updateSliderUI(Number(minEl.min), Number(minEl.max), Number(minEl.value), Number(this.value));
   applyFilters();
 });
 
@@ -880,153 +563,244 @@ function applyFilters() {
     return true;
   });
   renderProducts();
-
-  // Filter summary
   const parts = [];
   if (filters.category) parts.push(filters.category);
   if (filters.subcategory) parts.push(filters.subcategory);
   if (filters.brand) parts.push(filters.brand);
-  document.getElementById('filterSummary').textContent = parts.length ? parts.join(' › ') : '전체';
   document.getElementById('filteredCount').textContent = filteredProducts.length;
 }
 
+/* ── RENDER PRODUCTS ── */
 function renderProducts() {
   const grid = document.getElementById('productGrid');
-  if (filteredProducts.length === 0) {
-    grid.innerHTML = `<div class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="18" stroke="#555" stroke-width="1.5"/>
-        <path d="M13 20h14M20 13v14" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <p>조건에 맞는 상품이 없습니다</p>
-    </div>`;
+  if (!filteredProducts.length) {
+    grid.innerHTML = `<div class="empty-state"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="#ccc" stroke-width="1.5"/><path d="M11 18h14M18 11v14" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/></svg><p>조건에 맞는 상품이 없습니다</p></div>`;
     return;
   }
-
   grid.innerHTML = filteredProducts.map((p, i) => {
     const hasImg = p.image && p.image.trim() !== '';
     const imgHtml = hasImg
-      ? `<img src="${p.image}" alt="${p.name}" onerror="this.parentNode.innerHTML=placeholderHtml()">`
-      : `<div class="placeholder-icon">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <rect x="2" y="6" width="28" height="20" rx="3" stroke="#555" stroke-width="1.5"/>
-            <circle cx="11" cy="14" r="3" stroke="#555" stroke-width="1.5"/>
-            <path d="M2 22 L10 15 L16 21 L22 14 L30 22" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-          <span>이미지 없음</span>
-        </div>`;
+      ? `<img src="${p.image}" alt="${p.name}" onerror="this.style.display='none'">`
+      : `<div class="placeholder-icon"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="1" y="4" width="24" height="18" rx="3" stroke="#ccc" stroke-width="1.5"/><circle cx="9" cy="11" r="2.5" stroke="#ccc" stroke-width="1.5"/><path d="M1 18 L8 12 L13 17 L18 11 L25 18" stroke="#ccc" stroke-width="1.5" stroke-linejoin="round"/></svg><span>이미지 없음</span></div>`;
 
-    const isSelected = selectedProduct && selectedProduct.name === p.name;
-    return `<div class="product-card ${isSelected ? 'selected' : ''}" onclick="selectProduct(${i})">
-      <div class="card-img">
-        ${imgHtml}
-        <div class="card-cat-badge">${p.subcategory || p.category}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-brand">${p.brand}</div>
-        <div class="card-name">${p.name}</div>
-        <div class="card-prices">
+    if (tabMode === 'single') {
+      const isSelected = selectedProduct && selectedProduct.name === p.name;
+      return `<div class="product-card ${isSelected ? 'selected' : ''}" onclick="selectProduct(${i})">
+        <div class="card-img">${imgHtml}<div class="card-cat-badge">${p.subcategory || p.category}</div></div>
+        <div class="card-body">
+          <div class="card-brand">${p.brand}</div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-divider"></div>
           <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
-          <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}</div>
+          <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
+    } else {
+      const pkgQty = packageItems.filter(item => item.product.name === p.name).reduce((s, i) => s + i.qty, 0);
+      const isAdded = pkgQty > 0;
+      return `<div class="product-card ${isAdded ? 'pkg-added' : ''}" onclick="addToPackage(${i})">
+        <div class="card-img">
+          ${imgHtml}
+          <div class="card-cat-badge">${p.subcategory || p.category}</div>
+          ${isAdded ? `<div class="card-qty-badge">x${pkgQty}</div>` : ''}
+        </div>
+        <div class="card-body">
+          <div class="card-brand">${p.brand}</div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-divider"></div>
+          <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
+          <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
+        </div>
+      </div>`;
+    }
   }).join('');
 }
 
-function placeholderHtml() {
-  return `<div class="placeholder-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="28" height="20" rx="3" stroke="#555" stroke-width="1.5"/></svg><span>이미지 없음</span></div>`;
-}
-
+/* ── SINGLE MODE ── */
 function selectProduct(idx) {
   selectedProduct = filteredProducts[idx];
-  renderProducts(); // re-render to update selected state
-
-  // Update selected info
-  const el = document.getElementById('selectedInfo');
-  el.innerHTML = `
+  renderProducts();
+  document.getElementById('selectedInfo').innerHTML = `
     <div class="selected-product-name">${selectedProduct.name}</div>
     <div class="selected-product-meta">
       <div class="meta-item"><label>브랜드</label><span>${selectedProduct.brand}</span></div>
       <div class="meta-item"><label>카테고리</label><span>${selectedProduct.subcategory || selectedProduct.category}</span></div>
-      <div class="meta-item"><label>소매가</label><span>${Math.round(Number(selectedProduct.price)).toLocaleString('ko-KR')}원</span></div>
-      <div class="meta-item"><label>원가</label><span>${Math.round(Number(selectedProduct.cost)).toLocaleString('ko-KR')}원</span></div>
+      <div class="meta-item"><label>소매가</label><span class="price-val">${Math.round(Number(selectedProduct.price)).toLocaleString('ko-KR')}원</span></div>
+      <div class="meta-item"><label>원가</label><span class="cost-val">${Math.round(Number(selectedProduct.cost)).toLocaleString('ko-KR')}원</span></div>
     </div>`;
-
-  // Reset inputs
   document.getElementById('discountRate').value = 0;
+  document.getElementById('marginRate').value = 0;
   document.getElementById('directPrice').value = Math.round(Number(selectedProduct.price));
+  setMode('direct');
   calculate();
 }
 
 function setMode(m) {
   mode = m;
-  document.getElementById('btnDiscount').classList.toggle('active', m === 'discount');
-  document.getElementById('btnDirect').classList.toggle('active', m === 'direct');
+  ['discount','margin','direct'].forEach(k => {
+    document.getElementById('btn' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === m);
+  });
   document.getElementById('discountRate').disabled = m !== 'discount';
+  document.getElementById('marginRate').disabled = m !== 'margin';
   document.getElementById('directPrice').disabled = m !== 'direct';
+  document.getElementById('discountRate').classList.toggle('active-input', m === 'discount');
+  document.getElementById('marginRate').classList.toggle('active-input', m === 'margin');
+  document.getElementById('directPrice').classList.toggle('active-input', m === 'direct');
   calculate();
 }
 
 function calculate() {
   if (!selectedProduct) return;
-
-  const retail = Number(selectedProduct.price);
-  const cost = Number(selectedProduct.cost);
+  const retail = Number(selectedProduct.price), cost = Number(selectedProduct.cost);
   const feeRate = Number(document.getElementById('feeRate').value) / 100;
   const etcCost = Number(document.getElementById('etcCost').value);
   const freeShipping = Number(document.getElementById('freeShipping').value);
   const shippingCost = Number(document.getElementById('shippingCost').value);
   const targetMargin = Number(document.getElementById('targetMargin').value) / 100;
-
   let finalPrice;
-  if (mode === 'discount') {
-    const discountRate = Number(document.getElementById('discountRate').value) / 100;
-    finalPrice = retail * (1 - discountRate);
-  } else {
-    finalPrice = Number(document.getElementById('directPrice').value);
-  }
-
+  if (mode === 'discount') finalPrice = retail * (1 - Number(document.getElementById('discountRate').value) / 100);
+  else if (mode === 'margin') finalPrice = cost * (1 + Number(document.getElementById('marginRate').value) / 100);
+  else finalPrice = Number(document.getElementById('directPrice').value);
   const fee = finalPrice * feeRate;
-  const shipping = finalPrice >= freeShipping ? 0 : shippingCost;
+  const shipping = finalPrice >= freeShipping ? shippingCost : 0;
   const totalCost = cost + fee + shipping + etcCost;
   const profit = finalPrice - totalCost;
   const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
-
-  // Min price for target margin
-  // finalPrice - (cost + finalPrice*feeRate + shipping + etcCost) = finalPrice * targetMargin
-  // finalPrice * (1 - feeRate - targetMargin) = cost + shipping + etcCost
-  const minPrice = targetMargin < 1
-    ? (cost + shippingCost + etcCost) / (1 - feeRate - targetMargin)
-    : null;
-
-  // Update UI
+  const minPrice = targetMargin < 1 ? (cost + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
   document.getElementById('rRetail').textContent = fmt(retail);
   document.getElementById('rFinal').textContent = fmt(finalPrice);
   document.getElementById('rCost').textContent = fmt(cost);
   document.getElementById('rFee').textContent = fmt(fee);
-  document.getElementById('rShipping').textContent = shipping === 0 ? '무료 (판매자 부담 없음)' : fmt(shipping);
+  document.getElementById('rShipping').textContent = shipping > 0 ? fmt(shipping) : '-';
   document.getElementById('rEtc').textContent = fmt(etcCost);
   document.getElementById('rTotal').textContent = fmt(totalCost);
-
   const profitEl = document.getElementById('rProfit');
   profitEl.textContent = fmt(profit);
   profitEl.className = 'result-value ' + (profit >= 0 ? 'positive' : 'negative');
-
   const marginEl = document.getElementById('rMargin');
   marginEl.textContent = fmtPct(margin);
   marginEl.className = 'result-value ' + (margin >= 15 ? 'positive' : margin >= 0 ? 'warning' : 'negative');
-
   document.getElementById('rMinPrice').textContent = minPrice ? fmt(minPrice) : '-';
-
-  // Meter
-  const meterPct = Math.max(0, Math.min(100, margin * 3));
-  document.getElementById('meterFill').style.width = meterPct + '%';
+  document.getElementById('meterFill').style.width = Math.max(0, Math.min(100, margin * 3)) + '%';
   document.getElementById('meterPct').textContent = fmtPct(margin);
+  document.getElementById('meterPct').style.color = margin >= 15 ? 'var(--green)' : margin >= 0 ? 'var(--amber)' : 'var(--red)';
 }
 
-// INIT
+/* ── PACKAGE MODE ── */
+function addToPackage(idx) {
+  const p = filteredProducts[idx];
+  const existing = packageItems.find(item => item.product.name === p.name);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    packageItems.push({ product: p, qty: 1 });
+  }
+  renderProducts();
+  renderPackageList();
+  updateProductsHeader();
+  calculatePkg();
+}
+
+function removeFromPackage(idx) {
+  packageItems.splice(idx, 1);
+  renderProducts();
+  renderPackageList();
+  updateProductsHeader();
+  calculatePkg();
+}
+
+function renderPackageList() {
+  const el = document.getElementById('pkgList');
+  const countBadge = document.getElementById('pkgCountBadge');
+  const summary = document.getElementById('pkgSummary');
+  const total = packageItems.reduce((s, i) => s + i.qty, 0);
+  countBadge.textContent = `${total}개 상품`;
+
+  if (!packageItems.length) {
+    el.innerHTML = '<div class="pkg-empty">← 상품 카드를 클릭해서 패키지에 추가하세요</div>';
+    summary.style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = packageItems.map((item, i) => {
+    const totalPrice = Math.round(Number(item.product.price)) * item.qty;
+    return `<div class="pkg-item">
+      <div class="pkg-num">${i + 1}</div>
+      <div class="pkg-info">
+        <div class="pkg-name">${item.product.name}</div>
+        <div class="pkg-sub">${item.product.brand} · ${item.product.subcategory || item.product.category}</div>
+      </div>
+      <div class="pkg-qty">x${item.qty}</div>
+      <div class="pkg-price">${totalPrice.toLocaleString('ko-KR')}원</div>
+      <div class="pkg-del" onclick="removeFromPackage(${i})">×</div>
+    </div>`;
+  }).join('');
+
+  const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
+  const costSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.cost)) * i.qty, 0);
+  document.getElementById('pkgRetailSum').textContent = retailSum.toLocaleString('ko-KR') + '원';
+  document.getElementById('pkgCostSum').textContent = costSum.toLocaleString('ko-KR') + '원';
+  summary.style.display = 'grid';
+}
+
+function setPkgMode(m) {
+  pkgMode = m;
+  ['discount','margin','direct'].forEach(k => {
+    document.getElementById('pkgBtn' + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle('active', k === m);
+  });
+  document.getElementById('pkgDiscountRate').disabled = m !== 'discount';
+  document.getElementById('pkgMarginRate').disabled = m !== 'margin';
+  document.getElementById('pkgDirectPrice').disabled = m !== 'direct';
+  document.getElementById('pkgDiscountRate').classList.toggle('active-input', m === 'discount');
+  document.getElementById('pkgMarginRate').classList.toggle('active-input', m === 'margin');
+  document.getElementById('pkgDirectPrice').classList.toggle('active-input', m === 'direct');
+  calculatePkg();
+}
+
+function calculatePkg() {
+  if (!packageItems.length) return;
+  const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
+  const costSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.cost)) * i.qty, 0);
+  const feeRate = Number(document.getElementById('pkgFeeRate').value) / 100;
+  const etcCost = Number(document.getElementById('pkgEtcCost').value);
+  const freeShipping = Number(document.getElementById('pkgFreeShipping').value);
+  const shippingCost = Number(document.getElementById('pkgShippingCost').value);
+  const targetMargin = Number(document.getElementById('pkgTargetMargin').value) / 100;
+  let finalPrice;
+  if (pkgMode === 'discount') finalPrice = retailSum * (1 - Number(document.getElementById('pkgDiscountRate').value) / 100);
+  else if (pkgMode === 'margin') finalPrice = costSum * (1 + Number(document.getElementById('pkgMarginRate').value) / 100);
+  else finalPrice = Number(document.getElementById('pkgDirectPrice').value) || retailSum;
+  if (pkgMode === 'direct' && document.getElementById('pkgDirectPrice').value == 0) {
+    document.getElementById('pkgDirectPrice').value = retailSum;
+    finalPrice = retailSum;
+  }
+  const fee = finalPrice * feeRate;
+  const shipping = finalPrice >= freeShipping ? shippingCost : 0;
+  const totalCost = costSum + fee + shipping + etcCost;
+  const profit = finalPrice - totalCost;
+  const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
+  const minPrice = targetMargin < 1 ? (costSum + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
+  document.getElementById('pkgRRetail').textContent = fmt(retailSum);
+  document.getElementById('pkgRFinal').textContent = fmt(finalPrice);
+  document.getElementById('pkgRCost').textContent = fmt(costSum);
+  document.getElementById('pkgRFee').textContent = fmt(fee);
+  document.getElementById('pkgRShipping').textContent = shipping > 0 ? fmt(shipping) : '-';
+  document.getElementById('pkgREtc').textContent = fmt(etcCost);
+  document.getElementById('pkgRTotal').textContent = fmt(totalCost);
+  const profitEl = document.getElementById('pkgRProfit');
+  profitEl.textContent = fmt(profit);
+  profitEl.className = 'result-value ' + (profit >= 0 ? 'positive' : 'negative');
+  const marginEl = document.getElementById('pkgRMargin');
+  marginEl.textContent = fmtPct(margin);
+  marginEl.className = 'result-value ' + (margin >= 15 ? 'positive' : margin >= 0 ? 'warning' : 'negative');
+  document.getElementById('pkgRMinPrice').textContent = minPrice ? fmt(minPrice) : '-';
+  document.getElementById('pkgMeterFill').style.width = Math.max(0, Math.min(100, margin * 3)) + '%';
+  document.getElementById('pkgMeterPct').textContent = fmtPct(margin);
+  document.getElementById('pkgMeterPct').style.color = margin >= 15 ? 'var(--green)' : margin >= 0 ? 'var(--amber)' : 'var(--red)';
+}
+
 setMode('discount');
+setPkgMode('discount');
 loadData();
 </script>
 </body>
