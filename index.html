@@ -262,7 +262,7 @@ input[type=range]#priceMax { z-index: 4; }
 
 <div class="tab-bar">
   <button class="tab-btn active" id="tabSingle" onclick="switchTab('single')">단품</button>
-  <button class="tab-btn" id="tabPackage" onclick="switchTab('package')">패키지</button>
+  <button class="tab-btn" id="tabPackage" onclick="switchTab('package')">패키지&#xB7;견적</button>
 </div>
 
 <div class="main">
@@ -291,8 +291,8 @@ input[type=range]#priceMax { z-index: 4; }
           <div class="range-slider-container">
             <div class="range-track"></div>
             <div class="range-fill" id="rangeFill"></div>
-            <input type="range" id="priceMin" min="0" max="10000000" value="0" step="10000">
-            <input type="range" id="priceMax" min="0" max="10000000" value="10000000" step="10000">
+            <input type="range" id="priceMin" min="0" max="10000000" value="0" step="1">
+            <input type="range" id="priceMax" min="0" max="10000000" value="10000000" step="1">
           </div>
         </div>
       </div>
@@ -374,6 +374,23 @@ input[type=range]#priceMax { z-index: 4; }
       <!-- 패키지 패널 -->
       <div id="packagePanel" class="hidden">
         <div class="rp-section">
+          <div class="section-title">수신처 정보</div>
+          <div class="input-grid">
+            <div class="input-group"><label>거래처명</label><input type="text" id="quoteClient" placeholder="상호명"></div>
+            <div class="input-group"><label>담당자</label><input type="text" id="quoteManager" placeholder="담당자명"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group"><label>연락처</label><input type="text" id="quotePhone" placeholder="010-0000-0000"></div>
+            <div class="input-group"><label>발행일</label><input type="date" id="quoteDate"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>주소</label><input type="text" id="quoteAddress" placeholder="주소 (선택)"></div>
+          </div>
+          <div class="input-grid">
+            <div class="input-group" style="grid-column:1/-1;"><label>비고</label><textarea id="quoteNote" placeholder="특이사항, 배송 요청 등" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:60px;width:100%;"></textarea></div>
+          </div>
+        </div>
+        <div class="rp-section">
           <div class="section-title">패키지 구성 <span class="badge" id="pkgCountBadge">0개 상품</span></div>
           <div class="pkg-list" id="pkgList">
             <div class="pkg-empty">← 상품 카드를 클릭해서 패키지에 추가하세요</div>
@@ -411,16 +428,47 @@ input[type=range]#priceMax { z-index: 4; }
           <div class="input-grid">
             <div class="input-group" style="grid-column:1/-1;"><label>목표 수익률 (%)</label><input type="number" id="pkgTargetMargin" value="0" min="0" max="100" oninput="calculatePkg()"></div>
           </div>
+          <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:11px;font-weight:700;color:var(--text2);">출장비</span>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <input type="checkbox" id="pkgTripToggle" onchange="toggleTrip()" style="width:14px;height:14px;cursor:pointer;">
+                <span style="font-size:11px;color:var(--text2);">포함</span>
+              </label>
+            </div>
+            <div id="pkgTripFields" style="display:none;">
+              <div class="input-grid">
+                <div class="input-group"><label>출장비 청구액 (원)</label><input type="number" id="pkgTripCharge" value="0" min="0" oninput="calculatePkg()"></div>
+                <div class="input-group"><label>출장 원가 (원)</label><input type="number" id="pkgTripCost" value="0" min="0" oninput="calculatePkg()"></div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:11px;font-weight:700;color:var(--text2);">카드 수수료</span>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <input type="checkbox" id="pkgCardToggle" onchange="calculatePkg()" style="width:14px;height:14px;cursor:pointer;">
+                <span style="font-size:11px;color:var(--text2);">포함</span>
+              </label>
+            </div>
+            <div class="input-grid">
+              <div class="input-group"><label>카드 수수료율 (%)</label><input type="number" id="pkgCardRate" value="3" min="0" max="100" oninput="calculatePkg()"></div>
+            </div>
+          </div>
         </div>
         <div class="rp-section">
           <div class="section-title">수익 분석</div>
           <div class="result-table">
             <div class="result-row"><span class="result-label">소매가 합계</span><span class="result-value" id="pkgRRetail">-</span></div>
             <div class="result-row main-highlight"><span class="result-label">최종 판매가</span><span class="result-value" id="pkgRFinal">-</span></div>
+            <div class="result-row" id="pkgRTripRow" style="display:none;"><span class="result-label">출장비 청구액</span><span class="result-value" id="pkgRTripCharge">-</span></div>
+            <div class="result-row main-highlight" id="pkgRTotalChargeRow" style="display:none;"><span class="result-label" style="color:var(--blue);font-weight:700;">고객 청구 합계</span><span class="result-value" id="pkgRTotalCharge" style="color:var(--blue);font-size:16px;font-weight:700;">-</span></div>
             <div class="result-row"><span class="result-label">원가 합계</span><span class="result-value" id="pkgRCost">-</span></div>
             <div class="result-row"><span class="result-label">수수료</span><span class="result-value" id="pkgRFee">-</span></div>
             <div class="result-row"><span class="result-label">배송비</span><span class="result-value" id="pkgRShipping">-</span></div>
             <div class="result-row"><span class="result-label">기타 비용</span><span class="result-value" id="pkgREtc">-</span></div>
+            <div class="result-row" id="pkgRTripCostRow" style="display:none;"><span class="result-label">출장 원가</span><span class="result-value" id="pkgRTripCost">-</span></div>
+            <div class="result-row" id="pkgRCardRow" style="display:none;"><span class="result-label">카드 수수료</span><span class="result-value" id="pkgRCard">-</span></div>
             <div class="result-row highlight"><span class="result-label">총 비용</span><span class="result-value" id="pkgRTotal">-</span></div>
             <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">순 수익</span><span class="result-value" id="pkgRProfit">-</span></div>
             <div class="result-row highlight"><span class="result-label" style="font-weight:700;color:var(--text);">수익률</span><span class="result-value" id="pkgRMargin">-</span></div>
@@ -431,9 +479,36 @@ input[type=range]#priceMax { z-index: 4; }
             <div class="meter-bar"><div class="meter-fill" id="pkgMeterFill" style="width:0%"></div></div>
           </div>
         </div>
+        <div class="rp-section">
+          <div class="section-title">견적서 출력</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;">
+              <input type="checkbox" id="quoteShowRetail" style="width:14px;height:14px;">
+              소매가 합계 / 할인금액 표시
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;">
+              <input type="checkbox" id="quoteShowVat" style="width:14px;height:14px;">
+              부가세 별도 표기
+            </label>
+          </div>
+          <button onclick="openQuote()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">견적서 미리보기 &amp; 출력</button>
+        </div>
       </div>
 
     </div>
+  </div>
+</div>
+
+<div id="quoteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;overflow-y:auto;padding:20px;">
+  <div style="max-width:760px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #e0e0e0;background:#f8f8f8;">
+      <span style="font-size:13px;font-weight:700;">견적서 미리보기</span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="printQuote()" style="padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">인쇄 / PDF저장</button>
+        <button onclick="closeQuote()" style="padding:7px 16px;background:#eee;color:#333;border:none;border-radius:6px;font-size:12px;cursor:pointer;">닫기</button>
+      </div>
+    </div>
+    <div id="quoteContent" style="padding:40px 60px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#222;"></div>
   </div>
 </div>
 
@@ -516,8 +591,19 @@ function toggleFilter(type, value, el) {
   else { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); filters[type] = value; el.classList.add('active'); }
   if (type === 'category') {
     filters.subcategory = null;
+    filters.brand = null;
     const cf = filters.category ? allProducts.filter(p => p.category === filters.category) : allProducts;
     renderSubcategoryChips(cf); renderBrandChips(cf);
+    const prices = cf.map(p => Number(p.price)).filter(Boolean);
+    if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+  } else {
+    const cf = allProducts.filter(p => {
+      if (filters.category && p.category !== filters.category) return false;
+      if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      if (filters.brand && p.brand !== filters.brand) return false;
+      return true;
+    });
+    if (type === 'subcategory') renderBrandChips(cf);
     const prices = cf.map(p => Number(p.price)).filter(Boolean);
     if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
   }
@@ -526,16 +612,30 @@ function toggleFilter(type, value, el) {
 
 function updateSlider(absMin, absMax, curMin, curMax) {
   const minEl = document.getElementById('priceMin'), maxEl = document.getElementById('priceMax');
-  minEl.min = absMin; minEl.max = absMax; minEl.value = curMin;
-  maxEl.min = absMin; maxEl.max = absMax; maxEl.value = curMax;
-  updateSliderUI(absMin, absMax, curMin, curMax);
+  minEl.min = absMin; minEl.max = absMax;
+  maxEl.min = absMin; maxEl.max = absMax;
+  minEl.value = curMin; maxEl.value = curMax;
   document.getElementById('minDisplay').textContent = Math.round(curMin).toLocaleString('ko-KR');
   document.getElementById('maxDisplay').textContent = Math.round(curMax).toLocaleString('ko-KR');
+  updateSliderUI(absMin, absMax, curMin, curMax);
+}
+
+function getThumbPercent(el) {
+  const min = Number(el.min), max = Number(el.max), val = Number(el.value);
+  const range = max - min || 1;
+  const thumbWidth = 15;
+  const trackWidth = el.offsetWidth || el.getBoundingClientRect().width || 200;
+  const ratio = (val - min) / range;
+  const corrected = ratio * (trackWidth - thumbWidth) / trackWidth * 100 + (thumbWidth / 2 / trackWidth * 100);
+  return corrected;
 }
 
 function updateSliderUI(absMin, absMax, curMin, curMax) {
+  const minEl = document.getElementById('priceMin');
+  const maxEl = document.getElementById('priceMax');
   const range = absMax - absMin || 1;
-  const lp = ((curMin - absMin) / range) * 100, rp = ((curMax - absMin) / range) * 100;
+  const lp = ((curMin - absMin) / range) * 100;
+  const rp = ((curMax - absMin) / range) * 100;
   document.getElementById('rangeFill').style.left = lp + '%';
   document.getElementById('rangeFill').style.width = (rp - lp) + '%';
 }
@@ -673,7 +773,10 @@ function calculate() {
   const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
   const minPrice = targetMargin < 1 ? (cost + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
   document.getElementById('rRetail').textContent = fmt(retail);
-  document.getElementById('rFinal').textContent = fmt(finalPrice);
+  const discountAmt = retail - finalPrice;
+  const discountPct = retail > 0 ? (discountAmt / retail) * 100 : 0;
+  const discountStr = discountAmt > 0 ? ` ↓${Math.round(discountAmt).toLocaleString('ko-KR')}원 (${discountPct.toFixed(1)}% 할인)` : '';
+  document.getElementById('rFinal').innerHTML = `${fmt(finalPrice)}<span style="font-size:11px;color:var(--blue);font-weight:400;margin-left:6px;">${discountStr}</span>`;
   document.getElementById('rCost').textContent = fmt(cost);
   document.getElementById('rFee').textContent = fmt(fee);
   document.getElementById('rShipping').textContent = shipping > 0 ? fmt(shipping) : '-';
@@ -762,6 +865,12 @@ function setPkgMode(m) {
   calculatePkg();
 }
 
+function toggleTrip() {
+  const on = document.getElementById('pkgTripToggle').checked;
+  document.getElementById('pkgTripFields').style.display = on ? 'block' : 'none';
+  calculatePkg();
+}
+
 function calculatePkg() {
   if (!packageItems.length) return;
   const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
@@ -771,6 +880,11 @@ function calculatePkg() {
   const freeShipping = Number(document.getElementById('pkgFreeShipping').value);
   const shippingCost = Number(document.getElementById('pkgShippingCost').value);
   const targetMargin = Number(document.getElementById('pkgTargetMargin').value) / 100;
+  const tripOn = document.getElementById('pkgTripToggle').checked;
+  const tripCharge = tripOn ? Number(document.getElementById('pkgTripCharge').value) : 0;
+  const tripCost = tripOn ? Number(document.getElementById('pkgTripCost').value) : 0;
+  const cardOn = document.getElementById('pkgCardToggle').checked;
+  const cardRate = cardOn ? Number(document.getElementById('pkgCardRate').value) / 100 : 0;
   let finalPrice;
   if (pkgMode === 'discount') finalPrice = retailSum * (1 - Number(document.getElementById('pkgDiscountRate').value) / 100);
   else if (pkgMode === 'margin') finalPrice = costSum * (1 + Number(document.getElementById('pkgMarginRate').value) / 100);
@@ -781,12 +895,25 @@ function calculatePkg() {
   }
   const fee = finalPrice * feeRate;
   const shipping = finalPrice >= freeShipping ? shippingCost : 0;
-  const totalCost = costSum + fee + shipping + etcCost;
-  const profit = finalPrice - totalCost;
+  const totalCharge = finalPrice + tripCharge;
+  const cardFee = cardOn ? totalCharge * cardRate : 0;
+  const totalCost = costSum + fee + shipping + etcCost + tripCost + cardFee;
+  const profit = finalPrice - (costSum + fee + shipping + etcCost);
   const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
   const minPrice = targetMargin < 1 ? (costSum + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
   document.getElementById('pkgRRetail').textContent = fmt(retailSum);
-  document.getElementById('pkgRFinal').textContent = fmt(finalPrice);
+  const pkgDiscountAmt = retailSum - finalPrice;
+  const pkgDiscountPct = retailSum > 0 ? (pkgDiscountAmt / retailSum) * 100 : 0;
+  const pkgDiscountStr = pkgDiscountAmt > 0 ? ` ↓${Math.round(pkgDiscountAmt).toLocaleString('ko-KR')}원 (${pkgDiscountPct.toFixed(1)}% 할인)` : '';
+  document.getElementById('pkgRFinal').innerHTML = `${fmt(finalPrice)}<span style="font-size:11px;color:var(--blue);font-weight:400;margin-left:6px;">${pkgDiscountStr}</span>`;
+  document.getElementById('pkgRTripRow').style.display = tripOn ? 'flex' : 'none';
+  document.getElementById('pkgRTotalChargeRow').style.display = tripOn ? 'flex' : 'none';
+  document.getElementById('pkgRTripCostRow').style.display = (tripOn && tripCost > 0) ? 'flex' : 'none';
+  document.getElementById('pkgRCardRow').style.display = cardOn ? 'flex' : 'none';
+  document.getElementById('pkgRTripCharge').textContent = fmt(tripCharge);
+  document.getElementById('pkgRTotalCharge').textContent = fmt(totalCharge);
+  document.getElementById('pkgRTripCost').textContent = fmt(tripCost);
+  document.getElementById('pkgRCard').textContent = fmt(cardFee);
   document.getElementById('pkgRCost').textContent = fmt(costSum);
   document.getElementById('pkgRFee').textContent = fmt(fee);
   document.getElementById('pkgRShipping').textContent = shipping > 0 ? fmt(shipping) : '-';
@@ -807,6 +934,135 @@ function calculatePkg() {
 setMode('discount');
 setPkgMode('discount');
 loadData();
+const _today = new Date();
+const _yyyy = _today.getFullYear();
+const _mm = String(_today.getMonth()+1).padStart(2,'0');
+const _dd = String(_today.getDate()).padStart(2,'0');
+document.getElementById('quoteDate').value = `${_yyyy}-${_mm}-${_dd}`;
+
+function openQuote() {
+  if (!packageItems.length) { alert('패키지에 상품을 추가해주세요.'); return; }
+  const showRetail = document.getElementById('quoteShowRetail').checked;
+  const showVat = document.getElementById('quoteShowVat').checked;
+  const tripOn = document.getElementById('pkgTripToggle').checked;
+  const cardOn = document.getElementById('pkgCardToggle').checked;
+  const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
+  const costSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.cost)) * i.qty, 0);
+  const tripCharge = tripOn ? Number(document.getElementById('pkgTripCharge').value) : 0;
+  const cardRate = cardOn ? Number(document.getElementById('pkgCardRate').value) / 100 : 0;
+  let finalPrice;
+  if (pkgMode === 'discount') finalPrice = retailSum * (1 - Number(document.getElementById('pkgDiscountRate').value) / 100);
+  else if (pkgMode === 'margin') finalPrice = costSum * (1 + Number(document.getElementById('pkgMarginRate').value) / 100);
+  else finalPrice = Number(document.getElementById('pkgDirectPrice').value) || retailSum;
+  const totalCharge = finalPrice + tripCharge;
+  const cardFee = cardOn ? totalCharge * cardRate : 0;
+  const grandTotal = totalCharge + cardFee;
+  const client = document.getElementById('quoteClient').value || '';
+  const manager = document.getElementById('quoteManager').value || '';
+  const phone = document.getElementById('quotePhone').value || '';
+  const address = document.getElementById('quoteAddress').value || '';
+  const note = document.getElementById('quoteNote').value || '';
+  const dateInput = document.getElementById('quoteDate').value;
+  let dateStr;
+  if (dateInput) {
+    const d = new Date(dateInput);
+    dateStr = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+  } else {
+    const today = new Date();
+    dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+  }
+  const rows = packageItems.map((item, i) => {
+    const retailPrice = Math.round(Number(item.product.price));
+    const unitPrice = retailSum > 0 ? Math.round(finalPrice / retailSum * retailPrice) : retailPrice;
+    const supply = unitPrice * item.qty;
+    return `<tr style="border-bottom:1px solid #eee;background:${i%2===1?'#f7f7f7':'#fff'}">
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${i+1}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${item.product.brand}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${item.product.name}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${item.qty}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${unitPrice.toLocaleString('ko-KR')}원</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${supply.toLocaleString('ko-KR')}원</td>
+    </tr>`;
+  }).join('');
+  const summaryRows = `
+    ${showRetail ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">소매가 합계</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${retailSum.toLocaleString('ko-KR')}원</td></tr>` : ''}
+    ${showRetail && finalPrice < retailSum ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#c0392b;">할인 금액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#c0392b;">-${(retailSum-finalPrice).toLocaleString('ko-KR')}원</td></tr>` : ''}
+    ${showVat ? `
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">공급가액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPrice / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">부가세 (10%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPrice - finalPrice / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    ` : ''}
+    <tr style="border-top:1px solid #bbb;"><td colspan="5" style="text-align:right;padding:7px 12px;font-size:13px;font-weight:700;">합 계</td><td style="text-align:center;padding:7px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(finalPrice).toLocaleString('ko-KR')}원</td></tr>
+    ${tripOn ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">출장비</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${tripCharge.toLocaleString('ko-KR')}원</td></tr>` : ''}
+    ${cardOn ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">카드 수수료 (${document.getElementById('pkgCardRate').value}%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(cardFee).toLocaleString('ko-KR')}원</td></tr>` : ''}
+    <tr style="border-top:1px solid #333;"><td colspan="5" style="text-align:right;padding:8px 12px;font-size:13px;font-weight:700;">총 합계금액</td><td style="text-align:center;padding:8px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(grandTotal).toLocaleString('ko-KR')}원</td></tr>
+  `;
+  document.getElementById('quoteContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:1rem;border-bottom:1.5px solid #111;margin-bottom:10px;">
+      <div>
+        <div style="font-size:36px;font-weight:700;color:#111;">견 적 서</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;line-height:1.8;">
+          견적일: ${dateStr}<br>
+          유효기간: 발행일로부터 7일
+        </div>
+      </div>
+      <div style="text-align:right;font-size:12px;line-height:1.9;color:#444;">
+        <div style="font-size:18px;font-weight:700;color:#111;">드럼몬스터</div>
+        대표: 한정수<br>등록번호: 134-29-16863<br>경기도 안산시 상록구 건건로 69 지하1층<br>업태: 도소매 / 종목: 악기
+      </div>
+    </div>
+    <p style="font-size:12px;margin-bottom:6px;color:#333;">아래와 같이 견적합니다.</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #bbb;table-layout:fixed;">
+      <colgroup><col style="width:72px;"><col><col style="width:72px;"><col></colgroup>
+      <tr>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;background:#f0f0f0;font-weight:500;text-align:center;">합계금액</td>
+        <td colspan="3" style="border:1px solid #bbb;padding:7px 10px;font-size:16px;font-weight:700;">${Math.round(grandTotal).toLocaleString('ko-KR')}원</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;background:#f0f0f0;font-weight:500;text-align:center;">거래처</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;">${client}</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;background:#f0f0f0;font-weight:500;text-align:center;">담당자</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;">${manager}</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;background:#f0f0f0;font-weight:500;text-align:center;">연락처</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;">${phone}</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;background:#f0f0f0;font-weight:500;text-align:center;">주소</td>
+        <td style="border:1px solid #bbb;padding:7px 10px;font-size:12px;word-break:break-all;">${address}</td>
+      </tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#3a3a3a;">
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:28px;">No.</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:80px;">브랜드</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;">상품명</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:36px;">수량</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:100px;">단가</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:100px;">공급가액</th>
+      </tr></thead>
+      <tbody>${rows}${summaryRows}</tbody>
+    </table>
+    ${note ? `<div style="margin-top:14px;border:1px solid #e0e0e0;border-radius:6px;padding:10px 14px;"><div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;letter-spacing:0.5px;">비고</div><div style="font-size:12px;color:#555;line-height:1.8;white-space:pre-wrap;">${note}</div></div>` : ''}
+    <p style="margin-top:14px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;">본 견적서는 영수증 용도로도 사용이 가능합니다.</p>
+  `;
+  document.getElementById('quoteModal').style.display = 'block';
+}
+
+function closeQuote() {
+  document.getElementById('quoteModal').style.display = 'none';
+}
+
+function printQuote() {
+  const content = document.getElementById('quoteContent').innerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>견적서</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"><style>
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { font-family:'Noto Sans KR',sans-serif; padding:40px; color:#222; }
+    @media print { body { padding:20px; } }
+  </style></head><body>${content}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 800);
+}
 </script>
 </body>
 </html>
