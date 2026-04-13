@@ -590,24 +590,43 @@ function renderSubcategoryChips(products) {
 function toggleFilter(type, value, el) {
   if (filters[type] === value) { filters[type] = null; el.classList.remove('active'); }
   else { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); filters[type] = value; el.classList.add('active'); }
+
   if (type === 'category') {
     filters.subcategory = null;
     filters.brand = null;
-    const cf = filters.category ? allProducts.filter(p => p.category === filters.category) : allProducts;
-    renderSubcategoryChips(cf); renderBrandChips(cf);
+    if (!filters.category) {
+      document.getElementById('subcategoryChips').innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>';
+      renderBrandChips(allProducts);
+      const prices = allProducts.map(p => Number(p.price)).filter(Boolean);
+      if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+    } else {
+      const cf = allProducts.filter(p => p.category === filters.category);
+      renderSubcategoryChips(cf); renderBrandChips(cf);
+      const prices = cf.map(p => Number(p.price)).filter(Boolean);
+      if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+    }
+
+  } else if (type === 'subcategory') {
+    filters.brand = null;
+    const cf = allProducts.filter(p => {
+      if (filters.category && p.category !== filters.category) return false;
+      if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      return true;
+    });
+    renderBrandChips(cf);
     const prices = cf.map(p => Number(p.price)).filter(Boolean);
     if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+
   } else {
     const cf = allProducts.filter(p => {
       if (filters.category && p.category !== filters.category) return false;
       if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
-      if (filters.brand && p.brand !== filters.brand) return false;
       return true;
     });
-    if (type === 'subcategory') renderBrandChips(cf);
     const prices = cf.map(p => Number(p.price)).filter(Boolean);
     if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
   }
+
   applyFilters();
 }
 
