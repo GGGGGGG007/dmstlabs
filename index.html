@@ -589,24 +589,46 @@ function renderSubcategoryChips(products) {
 function toggleFilter(type, value, el) {
   if (filters[type] === value) { filters[type] = null; el.classList.remove('active'); }
   else { el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); filters[type] = value; el.classList.add('active'); }
+
   if (type === 'category') {
+    // 버그4 수정: 카테고리 해제 시 서브/브랜드 칩 초기화 문자 표시
     filters.subcategory = null;
     filters.brand = null;
-    const cf = filters.category ? allProducts.filter(p => p.category === filters.category) : allProducts;
-    renderSubcategoryChips(cf); renderBrandChips(cf);
-    const prices = cf.map(p => Number(p.price)).filter(Boolean);
-    if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
-  } else {
+    if (!filters.category) {
+      document.getElementById('subcategoryChips').innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>';
+      renderBrandChips(allProducts);
+      const prices = allProducts.map(p => Number(p.price)).filter(Boolean);
+      if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+    } else {
+      const cf = allProducts.filter(p => p.category === filters.category);
+      renderSubcategoryChips(cf); renderBrandChips(cf);
+      const prices = cf.map(p => Number(p.price)).filter(Boolean);
+      if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+    }
+
+  } else if (type === 'subcategory') {
+    // 버그1,2 수정: 브랜드 초기화 후 brand 제외한 cf로 칩·슬라이더 재계산
+    filters.brand = null;
     const cf = allProducts.filter(p => {
       if (filters.category && p.category !== filters.category) return false;
       if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
-      if (filters.brand && p.brand !== filters.brand) return false;
-      return true;
+      return true; // brand 필터 제외
     });
-    if (type === 'subcategory') renderBrandChips(cf);
+    renderBrandChips(cf);
+    const prices = cf.map(p => Number(p.price)).filter(Boolean);
+    if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
+
+  } else {
+    // 버그3 수정: 브랜드 변경 시 슬라이더를 brand 제외 기준으로 재계산
+    const cf = allProducts.filter(p => {
+      if (filters.category && p.category !== filters.category) return false;
+      if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      return true; // brand 필터 제외하여 슬라이더 범위 유지
+    });
     const prices = cf.map(p => Number(p.price)).filter(Boolean);
     if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
   }
+
   applyFilters();
 }
 
