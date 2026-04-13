@@ -80,6 +80,16 @@ input[type=range]#priceMax { z-index: 4; }
 .products-header strong { color: var(--blue); font-weight: 700; }
 .pkg-hint { font-size: 11px; color: var(--text3); }
 .pkg-hint span { color: var(--blue); font-weight: 700; }
+.sort-select { font-size: 11px; padding: 3px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text2); cursor: pointer; outline: none; }
+.sort-select:focus { border-color: var(--blue); }
+.preset-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.preset-chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.preset-chip:hover { border-color: var(--blue); color: var(--blue); }
+.preset-chip-del { font-size: 10px; color: var(--text3); cursor: pointer; line-height: 1; }
+.preset-chip-del:hover { color: var(--red); }
+.preset-add-btn { font-size: 10px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text3); cursor: pointer; white-space: nowrap; transition: all 0.15s; margin-left: 6px; vertical-align: middle; }
+.preset-add-btn:hover { border-color: var(--blue); color: var(--blue); }
+.preset-empty { font-size: 11px; color: var(--text3); }
 
 /* PRODUCT GRID */
 .product-grid { flex: 1; overflow-y: auto; padding: 12px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; align-content: start; }
@@ -172,12 +182,23 @@ input[type=range]#priceMax { z-index: 4; }
 
 /* INPUTS */
 .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.input-group { display: flex; flex-direction: column; gap: 4px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; position: relative; }
 .input-group label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
 .input-group input { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; color: var(--text); font-size: 13px; font-family: 'Noto Sans KR', sans-serif; transition: border 0.15s; width: 100%; }
 .input-group input:focus { outline: none; border-color: var(--blue); }
 .input-group input:disabled { opacity: 0.3; cursor: not-allowed; background: var(--surface2); }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--blue); border-radius: var(--radius-sm); z-index: 200; max-height: 180px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.autocomplete-item { padding: 8px 10px; font-size: 12px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: var(--blue-light); color: var(--blue); }
+.autocomplete-item .ac-sub { font-size: 10px; color: var(--text3); }
+.client-save-btn { font-size: 10px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text3); cursor: pointer; transition: all 0.15s; margin-left: 6px; vertical-align: middle; }
+.client-save-btn:hover { border-color: var(--blue); color: var(--blue); }
 .input-group input.active-input { border-color: var(--blue); background: var(--blue-light); }
+input[type=date]::-webkit-date-and-time-value { text-align: left; }
+input[type=date]::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 
 /* RESULT TABLE */
 .result-table { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -286,21 +307,31 @@ input[type=range]#priceMax { z-index: 4; }
         <div class="filter-label">예산</div>
         <div class="slider-wrap">
           <div class="slider-range-display">
-            <span>최소 <strong id="minDisplay">0</strong>원</span>
-            <span>최대 <strong id="maxDisplay">0</strong>원</span>
+            <span>최소 <strong id="minDisplay" onclick="startEditPrice('min')" style="cursor:pointer;">0</strong>원</span>
+            <span>최대 <strong id="maxDisplay" onclick="startEditPrice('max')" style="cursor:pointer;">0</strong>원</span>
           </div>
           <div class="range-slider-container">
             <div class="range-track"></div>
             <div class="range-fill" id="rangeFill"></div>
-            <input type="range" id="priceMin" min="0" max="10000000" value="0" step="1">
-            <input type="range" id="priceMax" min="0" max="10000000" value="10000000" step="1">
+            <input type="range" id="priceMin" min="0" max="10000000" value="0" step="1000">
+            <input type="range" id="priceMax" min="0" max="10000000" value="10000000" step="1000">
           </div>
         </div>
       </div>
     </div>
     <div class="products-header">
       <span>상품 <strong id="filteredCount">0</strong>개</span>
-      <span id="productsHeaderRight" class="pkg-hint"></span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="productsHeaderRight" class="pkg-hint"></span>
+        <select class="sort-select" id="sortSelect" onchange="applySort()">
+          <option value="default">기본순</option>
+          <option value="price_asc">가격 낮은순</option>
+          <option value="price_desc">가격 높은순</option>
+          <option value="category">카테고리</option>
+          <option value="subcategory">서브카테고리</option>
+          <option value="brand">브랜드</option>
+        </select>
+      </div>
     </div>
     <div class="product-grid" id="productGrid">
       ${Array(8).fill(`<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-body"><div class="skeleton-line short"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>`).join('')}
@@ -375,17 +406,27 @@ input[type=range]#priceMax { z-index: 4; }
       <!-- 패키지 패널 -->
       <div id="packagePanel" class="hidden">
         <div class="rp-section">
-          <div class="section-title">수신처 정보</div>
+          <div class="section-title">프리셋 <button class="preset-add-btn" onclick="savePreset()">+ 저장</button></div>
+          <div class="preset-bar" id="presetBar">
+            <span class="preset-empty">저장된 프리셋이 없습니다</span>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="section-title">수신처 정보 <button class="client-save-btn" onclick="saveClient()">+ 거래처 저장</button></div>
           <div class="input-grid">
-            <div class="input-group"><label>거래처명</label><input type="text" id="quoteClient" placeholder="상호명"></div>
-            <div class="input-group"><label>담당자</label><input type="text" id="quoteManager" placeholder="담당자명"></div>
+            <div class="input-group">
+              <label>거래처명</label>
+              <input type="text" id="quoteClient" placeholder="상호명" tabindex="1" autocomplete="off" oninput="onClientInput(this.value)" onblur="setTimeout(()=>closeAutocomplete(),200)">
+              <div class="autocomplete-list" id="autocompleteList" style="display:none;"></div>
+            </div>
+            <div class="input-group"><label>담당자</label><input type="text" id="quoteManager" placeholder="담당자명" tabindex="2"></div>
           </div>
           <div class="input-grid">
-            <div class="input-group"><label>연락처</label><input type="text" id="quotePhone" placeholder="010-0000-0000"></div>
-            <div class="input-group"><label>발행일</label><input type="date" id="quoteDate"></div>
+            <div class="input-group"><label>연락처</label><input type="text" id="quotePhone" placeholder="010-0000-0000" tabindex="3"></div>
+            <div class="input-group"><label>발행일</label><input type="text" id="quoteDate" placeholder="YYYY-MM-DD" tabindex="4"></div>
           </div>
           <div class="input-grid">
-            <div class="input-group" style="grid-column:1/-1;"><label>주소</label><input type="text" id="quoteAddress" placeholder="주소 (선택)"></div>
+            <div class="input-group" style="grid-column:1/-1;"><label>주소</label><input type="text" id="quoteAddress" placeholder="주소 (선택)" tabindex="5"></div>
           </div>
           <div class="input-grid">
             <div class="input-group" style="grid-column:1/-1;"><label>비고</label><textarea id="quoteNote" placeholder="특이사항, 배송 요청 등" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:60px;width:100%;"></textarea></div>
@@ -515,6 +556,7 @@ input[type=range]#priceMax { z-index: 4; }
 
 <script>
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycby7Km6iGD4kyucDnXozTRhi3Dosx1SWPH8Mo7dEZb-d6Oyw-z0MGzkbchDW8Z9Zbma7bg/exec';
+const PRESET_URL = 'https://script.google.com/macros/s/AKfycby9Znc-4Ppy4wSsegJDCybCc6nCQpQYgmptK6JtQnn1mTtoMXOAXGxuySUkDZ3tAOVGUg/exec';
 let allProducts = [], filteredProducts = [], selectedProduct = null;
 let mode = 'discount', pkgMode = 'discount';
 let tabMode = 'single'; // 'single' | 'package'
@@ -618,9 +660,11 @@ function toggleFilter(type, value, el) {
     if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
 
   } else {
+    // 브랜드 변경: 카테고리+서브+브랜드 모두 반영해서 슬라이더 범위 계산
     const cf = allProducts.filter(p => {
       if (filters.category && p.category !== filters.category) return false;
       if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      if (filters.brand && p.brand !== filters.brand) return false;
       return true;
     });
     const prices = cf.map(p => Number(p.price)).filter(Boolean);
@@ -660,6 +704,53 @@ function updateSliderUI(absMin, absMax, curMin, curMax) {
   document.getElementById('rangeFill').style.width = (rp - lp) + '%';
 }
 
+function startEditPrice(type) {
+  const id = type === 'min' ? 'minDisplay' : 'maxDisplay';
+  const el = document.getElementById(id);
+  const currentVal = type === 'min' ? filters.priceMin : filters.priceMax;
+  const minEl = document.getElementById('priceMin');
+  const maxEl = document.getElementById('priceMax');
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.value = currentVal;
+  input.style.cssText = 'width:80px;font-size:11px;font-weight:700;color:var(--blue);border:none;border-bottom:1.5px solid var(--blue);background:transparent;outline:none;text-align:center;-moz-appearance:textfield;';
+
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+
+  function commit() {
+    let val = Number(input.value);
+    if (isNaN(val) || val < 0) val = currentVal;
+    if (type === 'min') {
+      val = Math.min(val, filters.priceMax);
+      filters.priceMin = val;
+      minEl.value = val;
+    } else {
+      val = Math.max(val, filters.priceMin);
+      filters.priceMax = val;
+      maxEl.value = val;
+    }
+    const strong = document.createElement('strong');
+    strong.id = id;
+    strong.textContent = Math.round(val).toLocaleString('ko-KR');
+    strong.style.cssText = 'cursor:pointer;';
+    strong.onclick = () => startEditPrice(type);
+    input.replaceWith(strong);
+    updateSliderUI(Number(minEl.min), Number(minEl.max), Number(minEl.value), Number(maxEl.value));
+    applyFilters();
+  }
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = currentVal; input.blur(); } });
+  // webkit 스피너 제거
+  const style = document.createElement('style');
+  style.textContent = '#priceEditTemp::-webkit-inner-spin-button,#priceEditTemp::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}';
+  input.id = 'priceEditTemp';
+  document.head.appendChild(style);
+}
+
 document.getElementById('priceMin').addEventListener('input', function() {
   const maxEl = document.getElementById('priceMax');
   if (Number(this.value) > Number(maxEl.value)) this.value = maxEl.value;
@@ -678,6 +769,190 @@ document.getElementById('priceMax').addEventListener('input', function() {
   applyFilters();
 });
 
+/* ── SORT ── */
+function applySort() {
+  const val = document.getElementById('sortSelect').value;
+  if (val === 'default') { /* 원래 순서 유지 */ }
+  else if (val === 'price_asc') filteredProducts.sort((a, b) => Number(a.price) - Number(b.price));
+  else if (val === 'price_desc') filteredProducts.sort((a, b) => Number(b.price) - Number(a.price));
+  else if (val === 'category') filteredProducts.sort((a, b) => (a.category || '').localeCompare(b.category || '', 'ko'));
+  else if (val === 'subcategory') filteredProducts.sort((a, b) => (a.subcategory || '').localeCompare(b.subcategory || '', 'ko'));
+  else if (val === 'brand') filteredProducts.sort((a, b) => (a.brand || '').localeCompare(b.brand || '', 'ko'));
+  renderProducts();
+}
+
+/* ── PRESET ── */
+/* ── CLIENTS ── */
+let clients = JSON.parse(localStorage.getItem('dm_clients') || '[]');
+
+function saveCacheClients() {
+  localStorage.setItem('dm_clients', JSON.stringify(clients));
+}
+
+async function fetchClientsFromSheet() {
+  try {
+    const res = await fetch(PRESET_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getClients' })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      clients = data.clients;
+      saveCacheClients();
+    }
+  } catch(e) {}
+}
+
+async function saveClient() {
+  const name = document.getElementById('quoteClient').value.trim();
+  if (!name) { alert('거래처명을 입력하세요.'); return; }
+  const manager = document.getElementById('quoteManager').value.trim();
+  const phone = document.getElementById('quotePhone').value.trim();
+  const address = document.getElementById('quoteAddress').value.trim();
+
+  const existing = clients.findIndex(c => c.name === name);
+  const clientData = { name, manager, phone, address };
+  if (existing >= 0) {
+    if (!confirm(`"${name}" 거래처 정보를 업데이트할까요?`)) return;
+    clients[existing] = clientData;
+  } else {
+    clients.push(clientData);
+  }
+  saveCacheClients();
+
+  try {
+    await fetch(PRESET_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveClient', ...clientData })
+    });
+  } catch(e) {}
+  alert(`"${name}" 거래처가 저장됐습니다.`);
+}
+
+function onClientInput(val) {
+  const list = document.getElementById('autocompleteList');
+  if (!val.trim()) { list.style.display = 'none'; return; }
+  const matched = clients.filter(c => c.name.includes(val) || (c.manager && c.manager.includes(val)));
+  if (!matched.length) { list.style.display = 'none'; return; }
+  list.style.display = 'block';
+  list.innerHTML = matched.map(c =>
+    `<div class="autocomplete-item" onmousedown="selectClient('${c.name.replace(/'/g,"\\'")}')">
+      <span>${c.name}</span>
+      <span class="ac-sub">${c.manager || ''} ${c.phone || ''}</span>
+    </div>`
+  ).join('');
+}
+
+function selectClient(name) {
+  const c = clients.find(c => c.name === name);
+  if (!c) return;
+  document.getElementById('quoteClient').value = c.name;
+  document.getElementById('quoteManager').value = c.manager || '';
+  document.getElementById('quotePhone').value = c.phone || '';
+  document.getElementById('quoteAddress').value = c.address || '';
+  closeAutocomplete();
+}
+
+function closeAutocomplete() {
+  document.getElementById('autocompleteList').style.display = 'none';
+}
+
+/* ── PRESET (구글 시트 + 로컬 캐시) ── */
+let presets = JSON.parse(localStorage.getItem('dm_presets') || '[]');
+
+function saveCachePresets() {
+  localStorage.setItem('dm_presets', JSON.stringify(presets));
+}
+
+async function fetchPresetsFromSheet() {
+  try {
+    const res = await fetch(PRESET_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getPresets' })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      presets = data.presets;
+      saveCachePresets();
+      renderPresets();
+    }
+  } catch(e) { /* 네트워크 오류 시 로컬 캐시 유지 */ }
+}
+
+async function savePreset() {
+  if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
+  const name = prompt('프리셋 이름을 입력하세요:');
+  if (!name || !name.trim()) return;
+
+  const items = packageItems.map(i => ({ name: i.product.name, qty: i.qty }));
+
+  // 로컬 즉시 반영
+  const tempId = 'local_' + Date.now();
+  presets.push({ id: tempId, name: name.trim(), items });
+  saveCachePresets();
+  renderPresets();
+
+  // 구글 시트 백그라운드 저장 후 id 업데이트
+  try {
+    const res = await fetch(PRESET_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'savePreset', name: name.trim(), items })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const p = presets.find(p => p.id === tempId);
+      if (p) p.id = data.id;
+      saveCachePresets();
+      renderPresets();
+    }
+  } catch(e) { /* 오프라인 시 로컬만 저장된 상태 유지 */ }
+}
+
+function loadPreset(idx) {
+  const preset = presets[idx];
+  if (!preset) return;
+  packageItems = [];
+  preset.items.forEach(pi => {
+    const product = allProducts.find(p => p.name === pi.name);
+    if (product) packageItems.push({ product, qty: pi.qty });
+  });
+  renderPackageList();
+  calculatePkg();
+  renderProducts();
+  updateProductsHeader();
+}
+
+async function deletePreset(idx) {
+  if (!confirm(`"${presets[idx].name}" 프리셋을 삭제할까요?`)) return;
+  const id = presets[idx].id;
+
+  // 로컬 즉시 삭제
+  presets.splice(idx, 1);
+  saveCachePresets();
+  renderPresets();
+
+  // 구글 시트 백그라운드 삭제 (로컬 임시 id면 시트엔 없으므로 스킵)
+  if (!String(id).startsWith('local_')) {
+    try {
+      await fetch(PRESET_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'deletePreset', id })
+      });
+    } catch(e) {}
+  }
+}
+
+function renderPresets() {
+  const bar = document.getElementById('presetBar');
+  if (!presets.length) {
+    bar.innerHTML = '<span class="preset-empty">저장된 프리셋이 없습니다</span>';
+    return;
+  }
+  bar.innerHTML = presets.map((p, i) =>
+    `<span class="preset-chip" onclick="loadPreset(${i})">${p.name}<span class="preset-chip-del" onclick="event.stopPropagation();deletePreset(${i})">✕</span></span>`
+  ).join('');
+}
+
 function applyFilters() {
   filteredProducts = allProducts.filter(p => {
     const price = Number(p.price);
@@ -687,11 +962,7 @@ function applyFilters() {
     if (price < filters.priceMin || price > filters.priceMax) return false;
     return true;
   });
-  renderProducts();
-  const parts = [];
-  if (filters.category) parts.push(filters.category);
-  if (filters.subcategory) parts.push(filters.subcategory);
-  if (filters.brand) parts.push(filters.brand);
+  applySort();
   document.getElementById('filteredCount').textContent = filteredProducts.length;
 }
 
@@ -957,12 +1228,45 @@ function calculatePkg() {
 
 setMode('discount');
 setPkgMode('discount');
+renderPresets();       // 로컬 캐시 즉시 표시
+fetchPresetsFromSheet(); // 백그라운드에서 구글 시트 동기화
+fetchClientsFromSheet(); // 거래처 DB 백그라운드 로드
 loadData();
 const _today = new Date();
 const _yyyy = _today.getFullYear();
 const _mm = String(_today.getMonth()+1).padStart(2,'0');
 const _dd = String(_today.getDate()).padStart(2,'0');
 document.getElementById('quoteDate').value = `${_yyyy}-${_mm}-${_dd}`;
+
+document.getElementById('quoteDate').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { this.blur(); document.getElementById('quoteAddress').focus(); }
+});
+
+document.getElementById('quoteDate').addEventListener('blur', function() {
+  const val = this.value.trim();
+  if (!val) return;
+  // 이미 YYYY-MM-DD 형식이면 패스
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
+
+  const year = new Date().getFullYear();
+  let month, day, inputYear = year;
+
+  // 지원 형식: M/D, M/D/YY, M/D/YYYY, M.D, M.D.YY, M.D.YYYY
+  const match = val.match(/^(\d{1,2})[\/\.](\d{1,2})(?:[\/\.](\d{2,4}))?$/);
+  if (match) {
+    month = parseInt(match[1]);
+    day = parseInt(match[2]);
+    if (match[3]) {
+      inputYear = match[3].length === 2 ? 2000 + parseInt(match[3]) : parseInt(match[3]);
+    }
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      this.value = `${inputYear}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      return;
+    }
+  }
+  // 파싱 실패 시 오늘 날짜로 복원
+  this.value = `${year}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
+});
 
 function openQuote() {
   if (!packageItems.length) { alert('패키지에 상품을 추가해주세요.'); return; }
