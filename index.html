@@ -550,7 +550,7 @@ input[type=number] { -moz-appearance: textfield; }
         <button onclick="closeQuote()" style="padding:7px 16px;background:#eee;color:#333;border:none;border-radius:6px;font-size:12px;cursor:pointer;">닫기</button>
       </div>
     </div>
-    <div id="quoteContent" style="padding:40px 60px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#222;"></div>
+    <div id="quoteContent" style="padding:40px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#222;max-width:860px;margin:0 auto;"></div>
   </div>
 </div>
 
@@ -1325,15 +1325,15 @@ function openQuote() {
     <tr style="border-top:1px solid #333;"><td colspan="5" style="text-align:right;padding:8px 12px;font-size:13px;font-weight:700;">총 합계금액</td><td style="text-align:center;padding:8px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(grandTotal).toLocaleString('ko-KR')}원</td></tr>
   `;
   document.getElementById('quoteContent').innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:1rem;border-bottom:1.5px solid #111;margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-bottom:1rem;border-bottom:1.5px solid #111;margin-bottom:10px;">
       <div>
-        <div style="font-size:36px;font-weight:700;color:#111;">견 적 서</div>
+        <div class="quote-title" style="font-size:36px;font-weight:700;color:#111;">견 적 서</div>
         <div style="font-size:12px;color:#666;margin-top:4px;line-height:1.8;">
           견적일: ${dateStr}<br>
           유효기간: 발행일로부터 7일
         </div>
       </div>
-      <div style="text-align:right;font-size:12px;line-height:1.9;color:#444;">
+      <div class="company-info" style="text-align:right;font-size:12px;line-height:1.9;color:#444;">
         <div style="font-size:18px;font-weight:700;color:#111;">드럼몬스터</div>
         대표: 한정수<br>등록번호: 134-29-16863<br>경기도 안산시 상록구 건건로 69 지하1층<br>업태: 도소매 / 종목: 악기
       </div>
@@ -1360,12 +1360,12 @@ function openQuote() {
     </table>
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr style="background:#3a3a3a;">
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:28px;">No.</th>
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:80px;">브랜드</th>
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;">상품명</th>
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:36px;">수량</th>
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:100px;">단가</th>
-        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:100px;">공급가액</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:36px;white-space:nowrap;">No.</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:90px;white-space:nowrap;">브랜드</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;white-space:nowrap;">상품명</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:40px;white-space:nowrap;">수량</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:110px;white-space:nowrap;">단가</th>
+        <th style="padding:7px 6px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:110px;white-space:nowrap;">공급가액</th>
       </tr></thead>
       <tbody>${rows}${summaryRows}</tbody>
     </table>
@@ -1382,11 +1382,29 @@ function closeQuote() {
 function printQuote() {
   const content = document.getElementById('quoteContent').innerHTML;
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>견적서</title><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"><style>
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    body { font-family:'Noto Sans KR',sans-serif; padding:40px; color:#222; }
-    @media print { body { padding:20px; } }
-  </style></head><body>${content}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>견적서</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+      body { font-family:'Noto Sans KR',sans-serif; padding: 40px; color:#222; max-width: 860px; margin: 0 auto; }
+      table { width:100% !important; }
+      td { word-break: break-all; }
+      th { white-space: nowrap; word-break: keep-all; }
+      img { max-width: 100%; }
+      @media print {
+        body { padding: 30px; }
+        button { display: none !important; }
+      }
+      @media screen and (max-width: 600px) {
+        body { padding: 16px; font-size: 11px; }
+        .quote-title { font-size: 24px !important; }
+        .company-info { font-size: 10px !important; }
+      }
+    </style>
+  </head><body>${content}</body></html>`);
   w.document.close();
   w.focus();
   setTimeout(() => w.print(), 800);
