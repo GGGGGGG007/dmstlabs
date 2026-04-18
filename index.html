@@ -435,18 +435,7 @@ input[type=number] { -moz-appearance: textfield; }
 
       <!-- 패키지 패널 -->
       <div id="packagePanel" class="hidden">
-        <div class="rp-section">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:0.8px;text-transform:uppercase;min-width:48px;padding-top:5px;flex-shrink:0;">PRESET</div>
-            <div style="flex:1;display:flex;flex-wrap:wrap;gap:5px;" id="presetBar">
-              <span class="preset-empty">저장된 프리셋이 없습니다</span>
-            </div>
-            <div style="display:flex;gap:4px;flex-shrink:0;">
-              <button class="preset-add-btn" onclick="savePreset()">+ 저장</button>
-              <button class="preset-edit-btn" id="presetEditModeBtn" onclick="togglePresetEditMode()">✎ 수정</button>
-            </div>
-          </div>
-        </div>
+
         <div class="rp-section">
           <div class="section-title">수신처 정보 <button class="client-save-btn" onclick="saveClient()">+ 거래처 저장</button></div>
           <div class="input-grid">
@@ -558,8 +547,11 @@ input[type=number] { -moz-appearance: textfield; }
           </div>
         </div>
         <div class="rp-section">
-          <div class="section-title">견적 히스토리</div>
-          <div id="quoteHistoryList">
+          <div class="section-title" onclick="toggleHistoryAccordion()" style="cursor:pointer;user-select:none;">
+            견적 히스토리
+            <span id="historyAccordionIcon" style="margin-left:auto;font-size:10px;color:var(--text3);">▶</span>
+          </div>
+          <div id="quoteHistoryList" style="display:none;">
             <span class="history-empty">견적서 미리보기 시 자동 저장됩니다</span>
           </div>
         </div>
@@ -1016,24 +1008,6 @@ function renderPresetSubBar() {
 }
 
 function renderPresets() {
-  const bar = document.getElementById('presetBar');
-  if (!presets.length) {
-    bar.innerHTML = '<span class="preset-empty">저장된 프리셋이 없습니다</span>';
-    renderPresetSubBar();
-    return;
-  }
-  if (presetEditMode) {
-    bar.innerHTML = presets.map((p, i) =>
-      `<span class="preset-chip edit-mode">
-        <span onclick="startEditChipName(${i}, this)" style="cursor:text;" title="클릭하여 이름 수정">${p.name}</span>
-        <span class="preset-chip-del" onclick="event.stopPropagation();deletePreset(${i})">✕</span>
-      </span>`
-    ).join('');
-  } else {
-    bar.innerHTML = presets.map((p, i) =>
-      `<span class="preset-chip" onclick="loadPreset(${i})">${p.name}</span>`
-    ).join('');
-  }
   renderPresetSubBar();
 }
 
@@ -1070,7 +1044,20 @@ function saveQuoteHistory(data) {
   history.unshift(data);
   if (history.length > 20) history.splice(20);
   localStorage.setItem('dm_quote_history', JSON.stringify(history));
+  // 저장 시 아코디언 자동 펼침
+  const list = document.getElementById('quoteHistoryList');
+  const icon = document.getElementById('historyAccordionIcon');
+  if (list) { list.style.display = 'block'; }
+  if (icon) { icon.textContent = '▼'; }
   renderQuoteHistory();
+}
+
+function toggleHistoryAccordion() {
+  const list = document.getElementById('quoteHistoryList');
+  const icon = document.getElementById('historyAccordionIcon');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'block';
+  icon.textContent = isOpen ? '▶' : '▼';
 }
 
 function renderQuoteHistory() {
