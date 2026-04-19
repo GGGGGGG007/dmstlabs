@@ -131,11 +131,13 @@ input[type=range]#priceMax { z-index: 4; }
 .product-grid.list-view .card-img { width: 64px !important; height: 64px !important; aspect-ratio: 1/1 !important; flex-shrink: 0 !important; border-radius: 0 !important; padding-top: 0 !important; }
 .product-grid.list-view .card-img img { width: 100% !important; height: 100% !important; object-fit: contain; }
 .product-grid.list-view .placeholder-icon { width: 64px !important; height: 64px !important; }
+.product-grid.list-view .placeholder-icon svg { display: none; }
+.product-grid.list-view .placeholder-icon span { display: none; }
 .product-grid.list-view .card-cat-badge { display: none !important; }
 .product-grid.list-view .card-qty-badge { font-size: 9px; padding: 1px 5px; }
 .product-grid.list-view .card-body { flex: 1 !important; padding: 8px 12px !important; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 0 !important; min-width: 0; }
 .product-grid.list-view .card-brand { font-size: 11px; color: var(--orange); font-weight: 700; white-space: nowrap; min-width: 60px; max-width: 80px; flex-shrink: 0; }
-.product-grid.list-view .card-name { font-size: 12px; font-weight: 500; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; }
+.product-grid.list-view .card-name { font-size: 12px; font-weight: 500; color: var(--text); flex: 1; white-space: normal; word-break: keep-all; padding: 0 10px; }
 .product-grid.list-view .card-divider { display: none !important; }
 .product-grid.list-view .card-price { display: none !important; }
 .product-grid.list-view .card-cost { display: none !important; }
@@ -676,7 +678,7 @@ const SHEET_URL = 'https://script.google.com/macros/s/AKfycby7Km6iGD4kyucDnXozTR
 const PRESET_URL = 'https://script.google.com/macros/s/AKfycby9Znc-4Ppy4wSsegJDCybCc6nCQpQYgmptK6JtQnn1mTtoMXOAXGxuySUkDZ3tAOVGUg/exec';
 
 /* ── LOCK ── */
-const LOCK_PASSWORD = '070900'; // ← 비밀번호 변경 시 여기만 수정
+const LOCK_PASSWORD = '123456'; // ← 비밀번호 변경 시 여기만 수정
 let lockInput_buf = '';
 function lockInput(v) {
   const errorEl = document.getElementById('lockErrorMsg');
