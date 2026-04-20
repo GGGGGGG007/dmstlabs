@@ -613,6 +613,15 @@ input[type=number] { -moz-appearance: textfield; }
           <div class="result-table">
             <div class="result-row"><span class="result-label">소매가 합계</span><span class="result-value" id="pkgRRetail">-</span></div>
             <div class="result-row main-highlight"><span class="result-label">최종 판매가</span><span class="result-value" id="pkgRFinal">-</span></div>
+            <div class="result-row" id="pkgRExtraDiscountRow">
+              <span class="result-label" style="color:var(--red);">추가 할인</span>
+              <span class="result-value" style="display:flex;align-items:center;gap:4px;">
+                <span style="font-size:12px;color:var(--red);font-weight:700;">-</span>
+                <input type="number" id="pkgExtraDiscount" value="0" min="0" oninput="calculatePkg()" style="width:90px;text-align:right;font-size:12px;font-weight:700;color:var(--red);border:none;border-bottom:1.5px solid var(--border2);background:transparent;outline:none;font-family:'Noto Sans KR',sans-serif;padding:1px 2px;">
+                <span style="font-size:11px;color:var(--text2);">원</span>
+              </span>
+            </div>
+            <div class="result-row main-highlight" id="pkgRFinalAdjRow" style="display:none;"><span class="result-label" style="color:var(--blue);font-weight:700;">조정 후 판매가</span><span class="result-value" id="pkgRFinalAdj" style="color:var(--blue);font-size:16px;font-weight:700;">-</span></div>
             <div class="result-row" id="pkgRTripRow" style="display:none;"><span class="result-label">출장비 청구액</span><span class="result-value" id="pkgRTripCharge">-</span></div>
             <div class="result-row main-highlight" id="pkgRTotalChargeRow" style="display:none;"><span class="result-label" style="color:var(--blue);font-weight:700;">고객 청구 합계</span><span class="result-value" id="pkgRTotalCharge" style="color:var(--blue);font-size:16px;font-weight:700;">-</span></div>
             <div class="result-row"><span class="result-label">원가 합계</span><span class="result-value" id="pkgRCost">-</span></div>
@@ -641,7 +650,17 @@ input[type=number] { -moz-appearance: textfield; }
           </div>
         </div>
         <div class="rp-section">
-          <div class="section-title">견적서 출력</div>
+          <div class="section-title">출력 설정</div>
+          <div style="display:flex;gap:16px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;">
+              <input type="radio" name="docType" id="docTypeQuote" value="quote" checked style="cursor:pointer;">
+              견적서
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;">
+              <input type="radio" name="docType" id="docTypeStatement" value="statement" style="cursor:pointer;">
+              거래명세표
+            </label>
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
             <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;">
               <input type="checkbox" id="quoteShowRetail" style="width:14px;height:14px;">
@@ -651,8 +670,12 @@ input[type=number] { -moz-appearance: textfield; }
               <input type="checkbox" id="quoteShowVat" style="width:14px;height:14px;">
               부가세 별도 표기
             </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;">
+              <input type="checkbox" id="quoteShowFooter" checked style="width:14px;height:14px;">
+              하단 문구 표시
+            </label>
           </div>
-          <button onclick="openQuote()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">견적서 미리보기 &amp; 출력</button>
+          <button onclick="openQuote()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">미리보기 &amp; 출력</button>
         </div>
       </div>
 
@@ -679,6 +702,13 @@ const PRESET_URL = 'https://script.google.com/macros/s/AKfycby9Znc-4Ppy4wSsegJDC
 
 /* ── LOCK ── */
 const LOCK_PASSWORD = '070900'; // ← 비밀번호 변경 시 여기만 수정
+const LOCK_SESSION_KEY = 'dm_auth_session';
+
+// 이미 인증된 세션이면 로그인 화면 건너뜀
+if (localStorage.getItem(LOCK_SESSION_KEY) === LOCK_PASSWORD) {
+  document.getElementById('lockOverlay').classList.add('hidden');
+}
+
 let lockInput_buf = '';
 function lockInput(v) {
   const errorEl = document.getElementById('lockErrorMsg');
@@ -698,6 +728,7 @@ function lockInput(v) {
   // 6자리 완성 시 검증
   if (lockInput_buf.length === 6) {
     if (lockInput_buf === LOCK_PASSWORD) {
+      localStorage.setItem(LOCK_SESSION_KEY, LOCK_PASSWORD);
       document.getElementById('lockOverlay').classList.add('hidden');
     } else {
       const dotsEl = document.getElementById('lockDots');
@@ -1524,19 +1555,25 @@ function calculatePkg() {
     document.getElementById('pkgDirectPrice').value = retailSum;
     finalPrice = retailSum;
   }
-  const fee = finalPrice * feeRate;
-  const shipping = finalPrice >= freeShipping ? shippingCost : 0;
-  const totalCharge = finalPrice + tripCharge;
+  const extraDiscount = Number(document.getElementById('pkgExtraDiscount').value) || 0;
+  const finalPriceAdj = finalPrice - extraDiscount;
+  const fee = finalPriceAdj * feeRate;
+  const shipping = finalPriceAdj >= freeShipping ? shippingCost : 0;
+  const totalCharge = finalPriceAdj + tripCharge;
   const cardFee = cardOn ? totalCharge * cardRate : 0;
   const totalCost = costSum + fee + shipping + etcCost + tripCost + cardFee;
-  const profit = finalPrice - (costSum + fee + shipping + etcCost);
-  const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
+  const profit = finalPriceAdj - (costSum + fee + shipping + etcCost);
+  const margin = finalPriceAdj > 0 ? (profit / finalPriceAdj) * 100 : 0;
   const minPrice = targetMargin < 1 ? (costSum + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
   document.getElementById('pkgRRetail').textContent = fmt(retailSum);
   const pkgDiscountAmt = retailSum - finalPrice;
   const pkgDiscountPct = retailSum > 0 ? (pkgDiscountAmt / retailSum) * 100 : 0;
   const pkgDiscountStr = pkgDiscountAmt > 0 ? ` ↓${Math.round(pkgDiscountAmt).toLocaleString('ko-KR')}원 (${pkgDiscountPct.toFixed(1)}% 할인)` : '';
   document.getElementById('pkgRFinal').innerHTML = `${fmt(finalPrice)}<span style="font-size:11px;color:var(--blue);font-weight:400;margin-left:6px;">${pkgDiscountStr}</span>`;
+  // 추가 할인 행 표시
+  const adjRow = document.getElementById('pkgRFinalAdjRow');
+  adjRow.style.display = extraDiscount > 0 ? 'flex' : 'none';
+  if (extraDiscount > 0) document.getElementById('pkgRFinalAdj').textContent = fmt(finalPriceAdj);
   document.getElementById('pkgRTripRow').style.display = tripOn ? 'flex' : 'none';
   document.getElementById('pkgRTotalChargeRow').style.display = tripOn ? 'flex' : 'none';
   document.getElementById('pkgRTripCostRow').style.display = (tripOn && tripCost > 0) ? 'flex' : 'none';
@@ -1609,6 +1646,11 @@ function openQuote() {
   if (!packageItems.length) { alert('패키지에 상품을 추가해주세요.'); return; }
   const showRetail = document.getElementById('quoteShowRetail').checked;
   const showVat = document.getElementById('quoteShowVat').checked;
+  const showFooter = document.getElementById('quoteShowFooter').checked;
+  const docType = document.querySelector('input[name="docType"]:checked').value;
+  const isStatement = docType === 'statement';
+  const docTitle = isStatement ? '거래명세표' : '견&#xA0;적&#xA0;서';
+  const docTitleDisplay = isStatement ? '거 래 명 세 표' : '견 적 서';
   const tripOn = document.getElementById('pkgTripToggle').checked;
   const cardOn = document.getElementById('pkgCardToggle').checked;
   const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
@@ -1619,7 +1661,11 @@ function openQuote() {
   if (pkgMode === 'discount') finalPrice = retailSum * (1 - Number(document.getElementById('pkgDiscountRate').value) / 100);
   else if (pkgMode === 'margin') finalPrice = costSum * (1 + Number(document.getElementById('pkgMarginRate').value) / 100);
   else finalPrice = Number(document.getElementById('pkgDirectPrice').value) || retailSum;
-  const totalCharge = finalPrice + tripCharge;
+  const extraDiscount = Number(document.getElementById('pkgExtraDiscount').value) || 0;
+  const finalPriceBase = finalPrice; // 추가 할인 전 판매가
+  const finalPriceAdj = finalPrice - extraDiscount; // 추가 할인 후 판매가
+  finalPrice = finalPriceAdj;
+  const totalCharge = finalPriceAdj + tripCharge;
   const cardFee = cardOn ? totalCharge * cardRate : 0;
   const grandTotal = totalCharge + cardFee;
   const client = document.getElementById('quoteClient').value || '';
@@ -1651,12 +1697,17 @@ function openQuote() {
   }).join('');
   const summaryRows = `
     ${showRetail ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">소매가 합계</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${retailSum.toLocaleString('ko-KR')}원</td></tr>` : ''}
-    ${showRetail && finalPrice < retailSum ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#c0392b;">할인 금액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#c0392b;">-${(retailSum-finalPrice).toLocaleString('ko-KR')}원</td></tr>` : ''}
-    ${showVat ? `
-    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">공급가액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPrice / 1.1).toLocaleString('ko-KR')}원</td></tr>
-    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">부가세 (10%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPrice - finalPrice / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    ${showRetail && finalPriceBase < retailSum ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#c0392b;">할인 금액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#c0392b;">-${(retailSum-finalPriceBase).toLocaleString('ko-KR')}원</td></tr>` : ''}
+    ${showVat && extraDiscount === 0 ? `
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">공급가액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPriceAdj / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">부가세 (10%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPriceAdj - finalPriceAdj / 1.1).toLocaleString('ko-KR')}원</td></tr>
     ` : ''}
-    <tr style="border-top:1px solid #bbb;"><td colspan="5" style="text-align:right;padding:7px 12px;font-size:13px;font-weight:700;">합 계</td><td style="text-align:center;padding:7px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(finalPrice).toLocaleString('ko-KR')}원</td></tr>
+    <tr style="border-top:1px solid #bbb;"><td colspan="5" style="text-align:right;padding:7px 12px;font-size:13px;font-weight:700;">합 계</td><td style="text-align:center;padding:7px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(finalPriceBase).toLocaleString('ko-KR')}원</td></tr>
+    ${extraDiscount > 0 ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#c0392b;font-weight:700;">추가 할인</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#c0392b;font-weight:700;">-${extraDiscount.toLocaleString('ko-KR')}원</td></tr>` : ''}
+    ${showVat && extraDiscount > 0 ? `
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">공급가액</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPriceAdj / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    <tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">부가세 (10%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(finalPriceAdj - finalPriceAdj / 1.1).toLocaleString('ko-KR')}원</td></tr>
+    ` : ''}
     ${tripOn ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">출장비</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${tripCharge.toLocaleString('ko-KR')}원</td></tr>` : ''}
     ${cardOn ? `<tr><td colspan="5" style="text-align:right;padding:5px 12px;font-size:12px;color:#888;">카드 수수료 (${document.getElementById('pkgCardRate').value}%)</td><td style="text-align:center;padding:5px 6px;font-size:12px;color:#888;">${Math.round(cardFee).toLocaleString('ko-KR')}원</td></tr>` : ''}
     <tr style="border-top:1px solid #333;"><td colspan="5" style="text-align:right;padding:8px 12px;font-size:13px;font-weight:700;">총 합계금액</td><td style="text-align:center;padding:8px 6px;font-size:13px;font-weight:700;color:#1a6e3c;">${Math.round(grandTotal).toLocaleString('ko-KR')}원</td></tr>
@@ -1664,10 +1715,10 @@ function openQuote() {
   document.getElementById('quoteContent').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;padding-bottom:1rem;border-bottom:1.5px solid #111;margin-bottom:10px;">
       <div>
-        <div class="quote-title" style="font-size:36px;font-weight:700;color:#111;">견 적 서</div>
+        <div class="quote-title" style="font-size:36px;font-weight:700;color:#111;">${docTitleDisplay}</div>
         <div style="font-size:12px;color:#666;margin-top:4px;line-height:1.8;">
-          견적일: ${dateStr}<br>
-          유효기간: 발행일로부터 7일
+          ${isStatement ? '발행일' : '견적일'}: ${dateStr}<br>
+          ${isStatement ? '' : '유효기간: 발행일로부터 7일'}
         </div>
       </div>
       <div class="company-info" style="text-align:right;font-size:12px;line-height:1.9;color:#444;">
@@ -1707,7 +1758,7 @@ function openQuote() {
       <tbody>${rows}${summaryRows}</tbody>
     </table>
     ${note ? `<div style="margin-top:14px;border:1px solid #e0e0e0;border-radius:6px;padding:10px 14px;"><div style="font-size:11px;font-weight:700;color:#888;margin-bottom:6px;letter-spacing:0.5px;">비고</div><div style="font-size:12px;color:#555;line-height:1.8;white-space:pre-wrap;">${note}</div></div>` : ''}
-    <p style="margin-top:14px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;">본 견적서는 영수증 용도로도 사용이 가능합니다.</p>
+    ${showFooter ? `<p style="margin-top:14px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;">${isStatement ? '본 거래명세표는 세금계산서 발행 전 확인용입니다.' : '본 견적서는 영수증 용도로도 사용이 가능합니다.'}</p>` : ''}
   `;
   document.getElementById('quoteModal').style.display = 'block';
 
