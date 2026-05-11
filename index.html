@@ -1766,7 +1766,17 @@ function openQuote() {
   }
   const rows = packageItems.map((item, i) => {
     const retailPrice = Math.round(Number(item.product.price));
-    const unitPrice = retailSum > 0 ? Math.round(finalPrice / retailSum * retailPrice) : retailPrice;
+    const costPrice = Math.round(Number(item.product.cost));
+    let unitPrice;
+    if (pkgMode === 'discount') {
+      const discountRate = Number(document.getElementById('pkgDiscountRate').value) / 100;
+      unitPrice = Math.round(retailPrice * (1 - discountRate));
+    } else if (pkgMode === 'margin') {
+      const marginRate = Number(document.getElementById('pkgMarginRate').value) / 100;
+      unitPrice = Math.round(costPrice * (1 + marginRate));
+    } else {
+      unitPrice = retailSum > 0 ? Math.round(finalPrice / retailSum * retailPrice) : retailPrice;
+    }
     const supply = unitPrice * item.qty;
     return `<tr style="border-bottom:1px solid #eee;background:${i%2===1?'#f7f7f7':'#fff'}">
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${i+1}</td>
