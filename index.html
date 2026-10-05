@@ -457,7 +457,7 @@ input[type=number] { -moz-appearance: textfield; }
         <div class="filter-label">카테고리</div>
         <div class="chips" id="categoryChips"></div>
       </div>
-      <div class="filter-row">
+      <div class="filter-row" id="subcategoryRow">
         <div class="filter-label">서브</div>
         <div class="chips" id="subcategoryChips"><span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span></div>
       </div>
@@ -929,12 +929,34 @@ function renderBrandChips(products) {
     `<button class="chip brand-chip ${filters.brand === b ? 'active' : ''}" onclick="toggleFilter('brand','${b}',this)">${b}</button>`).join('');
 }
 
+// 서브카테고리가 비어 있는 상품용 "기타" 칩 값
+const NO_SUB = '__none__';
+
+function subMatch(p) {
+  if (!filters.subcategory) return true;
+  if (filters.subcategory === NO_SUB) return !p.subcategory;
+  return p.subcategory === filters.subcategory;
+}
+
+function resetSubcategoryRow() {
+  document.getElementById('subcategoryRow').style.display = '';
+  document.getElementById('subcategoryChips').innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>';
+}
+
 function renderSubcategoryChips(products) {
   const subs = [...new Set(products.map(p => p.subcategory))].filter(Boolean);
+  const row = document.getElementById('subcategoryRow');
   const el = document.getElementById('subcategoryChips');
-  if (!subs.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>'; return; }
-  el.innerHTML = subs.map(s =>
+  // 서브카테고리가 하나도 없는 카테고리 → 서브 줄 숨김
+  if (!subs.length) { row.style.display = 'none'; el.innerHTML = ''; return; }
+  row.style.display = '';
+  let html = subs.map(s =>
     `<button class="chip ${filters.subcategory === s ? 'active' : ''}" onclick="toggleFilter('subcategory','${s}',this)">${s}</button>`).join('');
+  // 일부 상품만 서브가 비어 있으면 "기타" 칩 추가
+  if (products.some(p => !p.subcategory)) {
+    html += `<button class="chip ${filters.subcategory === NO_SUB ? 'active' : ''}" onclick="toggleFilter('subcategory','${NO_SUB}',this)">기타</button>`;
+  }
+  el.innerHTML = html;
 }
 
 function toggleFilter(type, value, el) {
@@ -945,7 +967,7 @@ function toggleFilter(type, value, el) {
     filters.subcategory = null;
     filters.brand = null;
     if (!filters.category) {
-      document.getElementById('subcategoryChips').innerHTML = '<span style="font-size:11px;color:var(--text3);">카테고리 선택 시 표시</span>';
+      resetSubcategoryRow();
       renderBrandChips(allProducts);
       const prices = allProducts.map(p => Number(p.price)).filter(Boolean);
       if (prices.length) { const minP = Math.min(...prices), maxP = Math.max(...prices); filters.priceMin = minP; filters.priceMax = maxP; updateSlider(minP, maxP, minP, maxP); }
@@ -960,7 +982,7 @@ function toggleFilter(type, value, el) {
     filters.brand = null;
     const cf = allProducts.filter(p => {
       if (filters.category && p.category !== filters.category) return false;
-      if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      if (!subMatch(p)) return false;
       return true;
     });
     renderBrandChips(cf);
@@ -971,7 +993,7 @@ function toggleFilter(type, value, el) {
     // 브랜드 변경: 카테고리+서브+브랜드 모두 반영해서 슬라이더 범위 계산
     const cf = allProducts.filter(p => {
       if (filters.category && p.category !== filters.category) return false;
-      if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+      if (!subMatch(p)) return false;
       if (filters.brand && p.brand !== filters.brand) return false;
       return true;
     });
@@ -1396,7 +1418,7 @@ function applyFilters() {
   filteredProducts = allProducts.filter(p => {
     const price = Number(p.price);
     if (filters.category && p.category !== filters.category) return false;
-    if (filters.subcategory && p.subcategory !== filters.subcategory) return false;
+    if (!subMatch(p)) return false;
     if (filters.brand && p.brand !== filters.brand) return false;
     if (price < filters.priceMin || price > filters.priceMax) return false;
     return true;
