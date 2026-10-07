@@ -1543,6 +1543,15 @@ function setMode(m) {
   calculate();
 }
 
+/* 목표 마진 달성 최소 판매가: 배송비는 "최소가 자체"가 무료배송 기준을 넘는지로 판단 */
+function calcMinPrice(baseCost, feeRate, targetMargin, freeShipping, shippingCost) {
+  const denom = 1 - feeRate - targetMargin;
+  if (denom <= 0) return null; // 수수료율+목표마진 ≥ 100%면 달성 불가
+  const noShip = baseCost / denom;
+  if (noShip < freeShipping) return noShip;
+  return (baseCost + shippingCost) / denom;
+}
+
 function calculate() {
   if (!selectedProduct) return;
   const retail = Number(selectedProduct.price), cost = Number(selectedProduct.cost);
@@ -1560,7 +1569,7 @@ function calculate() {
   const totalCost = cost + fee + shipping + etcCost;
   const profit = finalPrice - totalCost;
   const margin = finalPrice > 0 ? (profit / finalPrice) * 100 : 0;
-  const minPrice = targetMargin < 1 ? (cost + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
+  const minPrice = calcMinPrice(cost + etcCost, feeRate, targetMargin, freeShipping, shippingCost);
   document.getElementById('rRetail').textContent = fmt(retail);
   const discountAmt = retail - finalPrice;
   const discountPct = retail > 0 ? (discountAmt / retail) * 100 : 0;
@@ -1577,7 +1586,7 @@ function calculate() {
   const marginEl = document.getElementById('rMargin');
   marginEl.textContent = fmtPct(margin);
   marginEl.className = 'result-value ' + (margin >= 15 ? 'positive' : margin >= 0 ? 'warning' : 'negative');
-  document.getElementById('rMinPrice').textContent = minPrice ? fmt(minPrice) : '-';
+  document.getElementById('rMinPrice').textContent = minPrice ? fmt(minPrice) : '달성 불가';
   document.getElementById('meterFill').style.width = Math.max(0, Math.min(100, margin * 3)) + '%';
   document.getElementById('meterPct').textContent = fmtPct(margin);
   document.getElementById('meterPct').style.color = margin >= 15 ? 'var(--green)' : margin >= 0 ? 'var(--amber)' : 'var(--red)';
@@ -1819,7 +1828,7 @@ function calculatePkg() {
   const totalCost = costSum + fee + shipping + etcCost + tripCost + cardFee;
   const profit = finalPriceAdj - (costSum + fee + shipping + etcCost);
   const margin = finalPriceAdj > 0 ? (profit / finalPriceAdj) * 100 : 0;
-  const minPrice = targetMargin < 1 ? (costSum + shipping + etcCost) / (1 - feeRate - targetMargin) : null;
+  const minPrice = calcMinPrice(costSum + etcCost, feeRate, targetMargin, freeShipping, shippingCost);
   document.getElementById('pkgRRetail').textContent = fmt(retailSum);
   const pkgDiscountAmt = retailSum - finalPrice;
   const pkgDiscountPct = retailSum > 0 ? (pkgDiscountAmt / retailSum) * 100 : 0;
@@ -1848,7 +1857,7 @@ function calculatePkg() {
   const marginEl = document.getElementById('pkgRMargin');
   marginEl.textContent = fmtPct(margin);
   marginEl.className = 'result-value ' + (margin >= 15 ? 'positive' : margin >= 0 ? 'warning' : 'negative');
-  document.getElementById('pkgRMinPrice').textContent = minPrice ? fmt(minPrice) : '-';
+  document.getElementById('pkgRMinPrice').textContent = minPrice ? fmt(minPrice) : '달성 불가';
   document.getElementById('pkgMeterFill').style.width = Math.max(0, Math.min(100, margin * 3)) + '%';
   document.getElementById('pkgMeterPct').textContent = fmtPct(margin);
   document.getElementById('pkgMeterPct').style.color = margin >= 15 ? 'var(--green)' : margin >= 0 ? 'var(--amber)' : 'var(--red)';
