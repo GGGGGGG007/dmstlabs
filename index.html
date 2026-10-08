@@ -169,7 +169,7 @@ input[type=range]#priceMax { z-index: 4; }
 .product-grid::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* CARD */
-.product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; }
+.product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; min-width: 0; }
 .product-card:hover { border-color: var(--blue); box-shadow: 0 3px 10px rgba(37,99,235,0.1); transform: translateY(-2px); }
 .product-card.selected { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 .product-card.pkg-added { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
@@ -183,7 +183,7 @@ input[type=range]#priceMax { z-index: 4; }
 
 .card-body { padding: 9px 10px 10px; display: flex; flex-direction: column; gap: 3px; }
 .card-brand { font-size: 10px; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-.card-name { font-size: 12px; color: var(--text); line-height: 1.45; word-break: keep-all; overflow-wrap: break-word; }
+.card-name { font-size: 12px; color: var(--text); line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
 .card-divider { height: 1px; background: var(--border); margin: 5px 0 4px; }
 .card-price { font-size: 13px; font-weight: 700; color: var(--text); }
 .card-cost { font-size: 10px; color: var(--text3); margin-top: 1px; }
@@ -366,7 +366,7 @@ input[type=number] { -moz-appearance: textfield; }
   .result-row.main-highlight .result-value { font-size: 14px; }
 }
 @media (max-width: 480px) {
-  .product-grid { grid-template-columns: repeat(2, 1fr); max-height: 480px; }
+  .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 480px; }
 
   .filter-row { flex-direction: column; gap: 5px; }
   .slider-wrap { width: 100%; }
