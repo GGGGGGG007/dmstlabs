@@ -950,7 +950,10 @@ function searchTerms() {
 }
 // 브랜드·상품명·카테고리·서브·품번 중 어디에든 있으면 일치. 여러 단어는 모두 포함해야 일치.
 function matchesSearch(p, terms) {
-  if (!p._hay) p._hay = [p.brand, p.name, p.category, p.subcategory, p.model].map(normSearch).join('|');
+  // 데이터에 들어온 글자 필드를 전부 검색(필드 이름이 model·품번 등 무엇이든 품번 검색 가능). 가격·이미지는 제외
+  if (!p._hay) p._hay = Object.keys(p)
+    .filter(k => !/^(_|price|cost|image|img)/i.test(k))
+    .map(k => normSearch(p[k])).join('|');
   return terms.every(t => p._hay.includes(t));
 }
 function onSearchInput() {
