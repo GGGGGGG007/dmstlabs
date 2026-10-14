@@ -1688,13 +1688,13 @@ function renderPackageList() {
 
   const itemScope = pkgScope === 'item';
   if (itemScope) ensureItemPrices();
+  const bulkUnits = itemScope ? null : computePkgPricing().unitPrices;
 
   el.innerHTML = packageItems.map((item, i) => {
     const totalPrice = Math.round(Number(item.product.price)) * item.qty;
     const totalCost = Math.round(Number(item.product.cost)) * item.qty;
     let priceCtrl = '';
-    let priceCol = `<div class="pkg-price">${totalPrice.toLocaleString('ko-KR')}원</div>
-        <div class="pkg-cost">원가 ${totalCost.toLocaleString('ko-KR')}원</div>`;
+    let priceCol = `<div id="pkgBulkPrice_${i}">${bulkPriceColHtml(item, bulkUnits ? bulkUnits[i] : 0)}</div>`;
     if (itemScope) {
       const pm = item.price.mode;
       const isDirect = pm === 'direct';
@@ -1737,6 +1737,27 @@ function renderPackageList() {
   document.getElementById('pkgRetailSum').textContent = retailSum.toLocaleString('ko-KR') + '원';
   document.getElementById('pkgCostSum').textContent = costSum.toLocaleString('ko-KR') + '원';
   summary.style.display = 'grid';
+}
+
+// 일괄 적용일 때 패키지 목록의 가격 칸: 할인율·마진율·총액이 반영된 판매가를 보여줌
+function bulkPriceColHtml(item, unit) {
+  const totalPrice = Math.round(Number(item.product.price)) * item.qty;
+  const totalCost = Math.round(Number(item.product.cost)) * item.qty;
+  const sale = Math.round(unit) * item.qty;
+  if (sale === totalPrice) {
+    return `<div class="pkg-price">${totalPrice.toLocaleString('ko-KR')}원</div>
+        <div class="pkg-cost">원가 ${totalCost.toLocaleString('ko-KR')}원</div>`;
+  }
+  return `<div class="pkg-price sale">${sale.toLocaleString('ko-KR')}원</div>
+        <div class="pkg-cost">소매 ${totalPrice.toLocaleString('ko-KR')}원</div>
+        <div class="pkg-cost">원가 ${totalCost.toLocaleString('ko-KR')}원</div>`;
+}
+
+function updateBulkPriceCells(unitPrices) {
+  packageItems.forEach((item, i) => {
+    const el = document.getElementById('pkgBulkPrice_' + i);
+    if (el) el.innerHTML = bulkPriceColHtml(item, unitPrices[i]);
+  });
 }
 
 /* ── 판매가 계산: 일괄 적용 / 상품별 설정 공통 ── */
@@ -1898,7 +1919,9 @@ function calculatePkg() {
   if (pkgScope === 'bulk' && pkgMode === 'direct' && document.getElementById('pkgDirectPrice').value == 0) {
     document.getElementById('pkgDirectPrice').value = retailSum;
   }
-  const finalPrice = computePkgPricing().finalPrice;
+  const pricing = computePkgPricing();
+  const finalPrice = pricing.finalPrice;
+  if (pkgScope === 'bulk') updateBulkPriceCells(pricing.unitPrices);
   const extraDiscount = Number(document.getElementById('pkgExtraDiscount').value) || 0;
   const finalPriceAdj = finalPrice - extraDiscount;
   const fee = finalPriceAdj * feeRate;
