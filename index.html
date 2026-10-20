@@ -184,6 +184,7 @@ input[type=range]#priceMax { z-index: 4; }
 .card-body { padding: 9px 10px 10px; display: flex; flex-direction: column; gap: 3px; }
 .card-brand { font-size: 10px; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .card-name { font-size: 12px; color: var(--text); line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
+.card-model { display: block; font-size: 10px; color: var(--text3); margin-top: 2px; letter-spacing: 0.2px; overflow-wrap: anywhere; }
 .card-divider { height: 1px; background: var(--border); margin: 5px 0 4px; }
 .card-price { font-size: 13px; font-weight: 700; color: var(--text); }
 .card-cost { font-size: 10px; color: var(--text3); margin-top: 1px; }
@@ -925,6 +926,16 @@ async function loadData() {
   }
 }
 
+// 모델명: 시트의 model 열 (필드 이름이 달라도 찾음)
+function modelOf(p) {
+  const v = p.model ?? p.Model ?? p.MODEL ?? p['모델명'] ?? p['모델'] ?? p['품번'] ?? '';
+  return String(v == null ? '' : v).replace(/^'/, '').trim();
+}
+function modelTag(p) {
+  const m = modelOf(p);
+  return m ? `<span class="card-model">${m}</span>` : '';
+}
+
 // 같은 상품 판별: 브랜드가 다르면 이름이 같아도 다른 상품
 function sameProduct(a, b) {
   return a.name === b.name && (a.brand || '') === (b.brand || '');
@@ -1510,7 +1521,7 @@ function renderProducts() {
           <div class="card-img">${imgHtml}</div>
           <div class="card-body">
             <div class="card-brand">${p.brand}</div>
-            <div class="card-name">${p.name}</div>
+            <div class="card-name">${p.name}${modelTag(p)}</div>
             <div class="card-price-wrap">
               <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
               <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
@@ -1524,7 +1535,7 @@ function renderProducts() {
           <div class="card-img">${imgHtml}${isAdded ? `<div class="card-qty-badge">x${pkgQty}</div>` : ''}</div>
           <div class="card-body">
             <div class="card-brand">${p.brand}</div>
-            <div class="card-name">${p.name}</div>
+            <div class="card-name">${p.name}${modelTag(p)}</div>
             <div class="card-price-wrap">
               <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
               <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
@@ -1540,7 +1551,7 @@ function renderProducts() {
           <div class="card-img">${imgHtml}<div class="card-cat-badge">${p.subcategory || p.category}</div></div>
           <div class="card-body">
             <div class="card-brand">${p.brand}</div>
-            <div class="card-name">${p.name}</div>
+            <div class="card-name">${p.name}${modelTag(p)}</div>
             <div class="card-divider"></div>
             <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
             <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
@@ -1557,7 +1568,7 @@ function renderProducts() {
           </div>
           <div class="card-body">
             <div class="card-brand">${p.brand}</div>
-            <div class="card-name">${p.name}</div>
+            <div class="card-name">${p.name}${modelTag(p)}</div>
             <div class="card-divider"></div>
             <div class="card-price">${Math.round(Number(p.price)).toLocaleString('ko-KR')}원</div>
             <div class="card-cost">원가 ${Math.round(Number(p.cost)).toLocaleString('ko-KR')}원</div>
@@ -1573,7 +1584,7 @@ function selectProduct(idx) {
   selectedProduct = filteredProducts[idx];
   renderProducts();
   document.getElementById('selectedInfo').innerHTML = `
-    <div class="selected-product-name">${selectedProduct.name}</div>
+    <div class="selected-product-name">${selectedProduct.name}${modelTag(selectedProduct)}</div>
     <div class="selected-product-meta">
       <div class="meta-item"><label>브랜드</label><span>${selectedProduct.brand}</span></div>
       <div class="meta-item"><label>카테고리</label><span>${selectedProduct.subcategory || selectedProduct.category}</span></div>
@@ -1718,7 +1729,7 @@ function renderPackageList() {
       <div class="pkg-num">${i + 1}</div>
       <div class="pkg-info">
         <div class="pkg-name">${item.product.name}</div>
-        <div class="pkg-sub">${item.product.brand} · ${item.product.subcategory || item.product.category}</div>
+        <div class="pkg-sub">${item.product.brand} · ${item.product.subcategory || item.product.category}${modelOf(item.product) ? ' · ' + modelOf(item.product) : ''}</div>
         ${priceCtrl}
       </div>
       <div class="pkg-qty">x${item.qty}</div>
