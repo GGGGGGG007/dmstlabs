@@ -1916,7 +1916,7 @@ function tripListRow() {
       <div class="pkg-num">${packageItems.length + 1}</div>
       <div class="pkg-info">
         <div class="pkg-name">${TRIP_LABEL}</div>
-        <div class="pkg-sub">드럼몬스터 · 서비스</div>
+        <div class="pkg-sub">서비스</div>
       </div>
       <div class="pkg-qty">x1</div>
       <div style="flex-shrink:0;min-width:72px;">
@@ -1944,7 +1944,7 @@ function delivListRow() {
       <div class="pkg-num">${num}</div>
       <div class="pkg-info">
         <div class="pkg-name">${DELIV_LABEL}</div>
-        <div class="pkg-sub">드럼몬스터 · 배송</div>
+        <div class="pkg-sub">배송</div>
       </div>
       <div class="pkg-qty">x1</div>
       <div style="flex-shrink:0;min-width:72px;">
@@ -2151,7 +2151,7 @@ function openQuote() {
   }).join('');
   const tripRow = tripOn ? `<tr style="border-bottom:1px solid #eee;background:${packageItems.length%2===1?'#f7f7f7':'#fff'}">
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${packageItems.length+1}</td>
-      <td style="padding:7px 6px;text-align:center;font-size:12px;">드럼몬스터</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;"></td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${TRIP_LABEL}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">1</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${tripCharge.toLocaleString('ko-KR')}원</td>
@@ -2160,7 +2160,7 @@ function openQuote() {
   const delivIdx = packageItems.length + (tripOn ? 1 : 0);
   const delivRow = delivOn ? `<tr style="border-bottom:1px solid #eee;background:${delivIdx%2===1?'#f7f7f7':'#fff'}">
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${delivIdx+1}</td>
-      <td style="padding:7px 6px;text-align:center;font-size:12px;">드럼몬스터</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;"></td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${DELIV_LABEL}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">1</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${delivCharge.toLocaleString('ko-KR')}원</td>
