@@ -132,6 +132,22 @@ input[type=range]#priceMax { z-index: 4; }
 .history-btn.load { background: var(--blue); border-color: var(--blue); color: #fff; }
 .history-btn.del:hover { border-color: var(--red); color: var(--red); }
 .history-empty { font-size: 11px; color: var(--text3); padding: 6px 0; }
+.history-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.history-toolbar .spacer { flex: 1; }
+.history-tool-btn { font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
+.history-tool-btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+.history-tool-btn.danger:disabled { opacity: 0.4; cursor: default; }
+.history-list.delete-mode .history-item { border-color: #f3c4c0; }
+.history-list.delete-mode .history-item.selected { background: #fdeceb; border-color: var(--red); }
+.history-item.editing { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
+.history-edit-tag { font-size: 10px; color: var(--blue); font-weight: 700; margin-left: 4px; }
+.quote-save-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.quote-save-row button { flex: 1; padding: 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
+.quote-save-btn { background: var(--surface); color: var(--blue); border: 1.5px solid var(--blue); }
+.quote-save-btn:disabled { opacity: 0.35; cursor: default; }
+.editing-banner { display: none; align-items: center; gap: 6px; font-size: 11px; color: var(--blue); background: #eff6ff; border-radius: var(--radius-sm); padding: 6px 10px; margin-bottom: 8px; }
+.editing-banner.visible { display: flex; }
+.editing-banner button { margin-left: auto; font-size: 11px; border: none; background: transparent; color: var(--text2); cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
 
 
 /* PRODUCT GRID */
@@ -738,7 +754,7 @@ input[type=number] { -moz-appearance: textfield; }
             <span id="historyAccordionIcon" style="margin-left:auto;font-size:10px;color:var(--text3);">▶</span>
           </div>
           <div id="quoteHistoryList" style="display:none;">
-            <span class="history-empty">견적서 미리보기 시 자동 저장됩니다</span>
+            <span class="history-empty">저장된 견적이 없습니다</span>
           </div>
           <button id="compareBtn" class="compare-btn" onclick="openCompare()">선택한 2개 견적 비교</button>
         </div>
@@ -767,6 +783,11 @@ input[type=number] { -moz-appearance: textfield; }
               <input type="checkbox" id="quoteShowFooter" checked style="width:14px;height:14px;">
               하단 문구 표시
             </label>
+          </div>
+          <div id="editingBanner" class="editing-banner"><span id="editingBannerText"></span><button onclick="clearEditing()">수정 취소 ✕</button></div>
+          <div class="quote-save-row">
+            <button class="quote-save-btn" onclick="saveQuoteNew()">새로 저장</button>
+            <button class="quote-save-btn" id="quoteEditSaveBtn" onclick="saveQuoteEdit()" disabled>수정 저장</button>
           </div>
           <button onclick="openQuote()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">미리보기 &amp; 출력</button>
         </div>
@@ -1420,17 +1441,100 @@ function startEditChipName(idx, el) {
 }
 
 /* ── QUOTE HISTORY ── */
-function saveQuoteHistory(data) {
+let editingHistoryId = null;   // 불러와서 수정 중인 견적 id
+let historyDeleteMode = false; // 선택 삭제 모드
+let deleteSelected = new Set();
+
+function newHistoryId() { return 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// 기록 읽기 (예전 기록에는 id가 없어서 처음 읽을 때 붙여 둔다)
+function getHistory() {
   const history = JSON.parse(localStorage.getItem('dm_quote_history') || '[]');
-  history.unshift(data);
-  if (history.length > 20) history.splice(20);
-  localStorage.setItem('dm_quote_history', JSON.stringify(history));
-  // 저장 시 아코디언 자동 펼침
+  let changed = false;
+  history.forEach(h => { if (!h.id) { h.id = newHistoryId(); changed = true; } });
+  if (changed) localStorage.setItem('dm_quote_history', JSON.stringify(history));
+  return history;
+}
+function setHistory(history) { localStorage.setItem('dm_quote_history', JSON.stringify(history)); }
+
+// 현재 화면 상태로 견적 기록 만들기
+function buildHistoryEntry() {
+  const t = computeQuoteTotals();
+  const _d = new Date();
+  const fr = Number(document.getElementById('pkgFeeRate').value) / 100;
+  const fp = t.pricing.finalPrice;
+  return {
+    date: `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`,
+    client: document.getElementById('quoteClient').value || '',
+    manager: document.getElementById('quoteManager').value || '',
+    phone: document.getElementById('quotePhone').value || '',
+    address: document.getElementById('quoteAddress').value || '',
+    note: document.getElementById('quoteNote').value || '',
+    itemCount: packageItems.reduce((s,i) => s+i.qty, 0),
+    items: packageItems.map(i => i.price ? { name: i.product.name, brand: i.product.brand || '', qty: i.qty, price: { ...i.price } } : { name: i.product.name, brand: i.product.brand || '', qty: i.qty }),
+    pricing: {
+      scope: pkgScope,
+      mode: pkgMode,
+      discount: Number(document.getElementById('pkgDiscountRate').value) || 0,
+      margin: Number(document.getElementById('pkgMarginRate').value) || 0,
+      direct: Number(document.getElementById('pkgDirectPrice').value) || 0
+    },
+    extras: getExtraCharges(),
+    finalPrice: Math.round(t.grandTotal),
+    margin: fp > 0 ? ((fp - t.pricing.costSum - fp*fr) / fp * 100) : null
+  };
+}
+
+function openHistoryAccordion() {
   const list = document.getElementById('quoteHistoryList');
   const icon = document.getElementById('historyAccordionIcon');
-  if (list) { list.style.display = 'block'; }
-  if (icon) { icon.textContent = '▼'; }
+  if (list) list.style.display = 'block';
+  if (icon) icon.textContent = '▼';
+}
+
+// 새로 저장: 현재 견적을 새 기록으로 추가
+function saveQuoteNew() {
+  if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
+  const entry = { id: newHistoryId(), ...buildHistoryEntry() };
+  const history = getHistory();
+  history.unshift(entry);
+  if (history.length > 20) history.splice(20);
+  setHistory(history);
+  editingHistoryId = entry.id; // 저장 직후부터는 이 견적을 수정하는 상태
+  openHistoryAccordion();
   renderQuoteHistory();
+  alert('견적을 저장했습니다.');
+}
+
+// 수정 저장: 불러온 견적을 그 자리에서 덮어쓰기
+function saveQuoteEdit() {
+  if (!editingHistoryId) return;
+  if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
+  const history = getHistory();
+  const idx = history.findIndex(h => h.id === editingHistoryId);
+  if (idx < 0) { alert('수정하던 견적이 목록에 없습니다. 새로 저장해 주세요.'); clearEditing(); return; }
+  history[idx] = { id: editingHistoryId, ...buildHistoryEntry() };
+  setHistory(history);
+  openHistoryAccordion();
+  renderQuoteHistory();
+  alert('견적을 수정했습니다.');
+}
+
+function clearEditing() {
+  editingHistoryId = null;
+  renderQuoteHistory();
+}
+
+function updateEditingUI(history) {
+  const h = editingHistoryId ? history.find(x => x.id === editingHistoryId) : null;
+  if (editingHistoryId && !h) editingHistoryId = null;
+  const banner = document.getElementById('editingBanner');
+  const btn = document.getElementById('quoteEditSaveBtn');
+  if (banner) {
+    banner.classList.toggle('visible', !!h);
+    if (h) document.getElementById('editingBannerText').textContent = `수정 중: ${h.client || '(거래처 없음)'} · ${h.date}`;
+  }
+  if (btn) btn.disabled = !h;
 }
 
 function toggleHistoryAccordion() {
@@ -1441,43 +1545,96 @@ function toggleHistoryAccordion() {
   icon.textContent = isOpen ? '▶' : '▼';
 }
 
+function escHtml(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function renderQuoteHistory() {
   const el = document.getElementById('quoteHistoryList');
   if (!el) return;
-  const history = JSON.parse(localStorage.getItem('dm_quote_history') || '[]');
+  const history = getHistory();
+  updateEditingUI(history);
   compareSelected = [];
   const btn = document.getElementById('compareBtn');
   if (btn) btn.classList.remove('visible');
   if (!history.length) {
-    el.innerHTML = '<span class="history-empty">견적서 미리보기 시 자동 저장됩니다</span>';
+    historyDeleteMode = false; deleteSelected.clear();
+    el.innerHTML = '<span class="history-empty">저장된 견적이 없습니다</span>';
     return;
   }
-  el.innerHTML = history.map((h, i) =>
-    `<div class="history-item">
-      <input type="checkbox" class="history-item-check" id="compare_${i}" onchange="toggleCompare(${i}, this.checked)">
-      <div class="history-item-info">
-        <div class="history-item-title">${h.client || '(거래처 없음)'} <span style="font-size:10px;color:var(--text3);font-weight:400;">${h.date}</span></div>
-        <div class="history-item-meta">${h.itemCount}개 상품${h.margin != null ? ' · 수익률 ' + h.margin.toFixed(1) + '%' : ''}</div>
-      </div>
-      <div class="history-item-price">${h.finalPrice.toLocaleString('ko-KR')}원</div>
+  // 없어진 기록은 선택에서 뺀다
+  deleteSelected = new Set([...deleteSelected].filter(id => history.some(h => h.id === id)));
+  const n = deleteSelected.size;
+  const toolbar = historyDeleteMode
+    ? `<div class="history-toolbar">
+         <button class="history-tool-btn" onclick="toggleSelectAllHistory()">${n === history.length ? '전체 해제' : '전체 선택'}</button>
+         <span class="spacer"></span>
+         <button class="history-tool-btn" onclick="setHistoryDeleteMode(false)">취소</button>
+         <button class="history-tool-btn danger" onclick="deleteSelectedHistory()" ${n ? '' : 'disabled'}>선택한 ${n}개 삭제</button>
+       </div>`
+    : `<div class="history-toolbar">
+         <span style="font-size:11px;color:var(--text3);">체크 2개 → 비교</span>
+         <span class="spacer"></span>
+         <button class="history-tool-btn" onclick="setHistoryDeleteMode(true)">선택 삭제</button>
+       </div>`;
+  el.innerHTML = toolbar + `<div class="history-list${historyDeleteMode ? ' delete-mode' : ''}">` + history.map((h, i) => {
+    const sel = deleteSelected.has(h.id);
+    const editing = h.id === editingHistoryId;
+    const check = historyDeleteMode
+      ? `<input type="checkbox" class="history-item-check" ${sel ? 'checked' : ''} onchange="toggleDeleteSelect('${h.id}', this.checked)">`
+      : `<input type="checkbox" class="history-item-check" id="compare_${i}" onchange="toggleCompare(${i}, this.checked)">`;
+    const actions = historyDeleteMode ? '' : `
       <div class="history-item-actions">
         <button class="history-btn del" onclick="deleteHistory(${i})">삭제</button>
         <button class="history-btn load" onclick="loadHistory(${i})">불러오기</button>
+      </div>`;
+    return `<div class="history-item${sel ? ' selected' : ''}${editing && !historyDeleteMode ? ' editing' : ''}">
+      ${check}
+      <div class="history-item-info">
+        <div class="history-item-title">${escHtml(h.client) || '(거래처 없음)'} <span style="font-size:10px;color:var(--text3);font-weight:400;">${escHtml(h.date)}</span>${editing ? '<span class="history-edit-tag">수정 중</span>' : ''}</div>
+        <div class="history-item-meta">${h.itemCount}개 상품${h.margin != null ? ' · 수익률 ' + h.margin.toFixed(1) + '%' : ''}</div>
       </div>
-    </div>`
-  ).join('');
+      <div class="history-item-price">${Number(h.finalPrice || 0).toLocaleString('ko-KR')}원</div>${actions}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// 선택 삭제 모드 켜기/끄기 (켜면 비교 선택은 풀린다)
+function setHistoryDeleteMode(on) {
+  historyDeleteMode = on;
+  deleteSelected.clear();
+  renderQuoteHistory();
+}
+function toggleDeleteSelect(id, checked) {
+  if (checked) deleteSelected.add(id); else deleteSelected.delete(id);
+  renderQuoteHistory();
+}
+function toggleSelectAllHistory() {
+  const history = getHistory();
+  if (deleteSelected.size === history.length) deleteSelected.clear();
+  else history.forEach(h => deleteSelected.add(h.id));
+  renderQuoteHistory();
+}
+function deleteSelectedHistory() {
+  const n = deleteSelected.size;
+  if (!n) return;
+  if (!confirm(`선택한 ${n}개 견적을 삭제할까요?`)) return;
+  setHistory(getHistory().filter(h => !deleteSelected.has(h.id)));
+  if (deleteSelected.has(editingHistoryId)) editingHistoryId = null;
+  historyDeleteMode = false;
+  deleteSelected.clear();
+  renderQuoteHistory();
 }
 
 function deleteHistory(idx) {
-  const history = JSON.parse(localStorage.getItem('dm_quote_history') || '[]');
+  const history = getHistory();
   if (!confirm('이 견적 기록을 삭제할까요?')) return;
-  history.splice(idx, 1);
-  localStorage.setItem('dm_quote_history', JSON.stringify(history));
+  const [removed] = history.splice(idx, 1);
+  if (removed && removed.id === editingHistoryId) editingHistoryId = null;
+  setHistory(history);
   renderQuoteHistory();
 }
 
 function loadHistory(idx) {
-  const history = JSON.parse(localStorage.getItem('dm_quote_history') || '[]');
+  const history = getHistory();
   const h = history[idx];
   if (!h || !h.items) return;
   packageItems = [];
@@ -1488,6 +1645,8 @@ function loadHistory(idx) {
   if (h.client) document.getElementById('quoteClient').value = h.client;
   if (h.manager) document.getElementById('quoteManager').value = h.manager;
   if (h.phone) document.getElementById('quotePhone').value = h.phone;
+  if (h.address != null) document.getElementById('quoteAddress').value = h.address;
+  if (h.note != null) document.getElementById('quoteNote').value = h.note;
   // 판매가 설정 복원 (이 기능 이전에 저장된 견적은 pricing이 없어서 현재 설정 유지)
   if (h.pricing) {
     document.getElementById('pkgDiscountRate').value = h.pricing.discount || 0;
@@ -1498,9 +1657,11 @@ function loadHistory(idx) {
   }
   // 출장·세팅·조율 / 배송비 복원 (이 기능 이전에 저장된 견적은 extras가 없어서 현재 설정 유지)
   if (h.extras) setExtraCharges(h.extras);
+  editingHistoryId = h.id;
   renderPackageList();
   calculatePkg();
   switchTab('package');
+  renderQuoteHistory();
 }
 
 
@@ -2101,15 +2262,8 @@ document.getElementById('quoteDate').addEventListener('blur', function() {
   this.value = `${year}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
 });
 
-function openQuote() {
-  if (!packageItems.length) { alert('패키지에 상품을 추가해주세요.'); return; }
-  const showRetail = document.getElementById('quoteShowRetail').checked;
-  const showVat = document.getElementById('quoteShowVat').checked;
-  const showFooter = document.getElementById('quoteShowFooter').checked;
-  const docType = document.querySelector('input[name="docType"]:checked').value;
-  const isStatement = docType === 'statement';
-  const docTitle = isStatement ? '거래명세표' : '견&#xA0;적&#xA0;서';
-  const docTitleDisplay = isStatement ? '거 래 명 세 표' : '견 적 서';
+// 견적 합계 계산 (미리보기·저장 공통)
+function computeQuoteTotals() {
   const tripOn = document.getElementById('pkgTripToggle').checked;
   const cardOn = document.getElementById('pkgCardToggle').checked;
   const retailSum = packageItems.reduce((s, i) => s + Math.round(Number(i.product.price)) * i.qty, 0);
@@ -2119,14 +2273,28 @@ function openQuote() {
   const delivCharge = delivOn ? Number(document.getElementById('pkgDelivCharge').value) : 0;
   const cardRate = cardOn ? Number(document.getElementById('pkgCardRate').value) / 100 : 0;
   const pricing = computePkgPricing();
-  let finalPrice = pricing.finalPrice;
   const extraDiscount = Number(document.getElementById('pkgExtraDiscount').value) || 0;
-  const finalPriceBase = finalPrice; // 추가 할인 전 판매가
-  const finalPriceAdj = finalPrice - extraDiscount; // 추가 할인 후 판매가
-  finalPrice = finalPriceAdj;
+  const finalPriceBase = pricing.finalPrice; // 추가 할인 전 판매가
+  const finalPriceAdj = finalPriceBase - extraDiscount; // 추가 할인 후 판매가
   const totalCharge = finalPriceAdj + tripCharge + delivCharge;
   const cardFee = cardOn ? totalCharge * cardRate : 0;
   const grandTotal = totalCharge + cardFee;
+  return { tripOn, cardOn, retailSum, costSum, tripCharge, delivOn, delivCharge, cardRate, pricing,
+           extraDiscount, finalPriceBase, finalPriceAdj, totalCharge, cardFee, grandTotal };
+}
+
+function openQuote() {
+  if (!packageItems.length) { alert('패키지에 상품을 추가해주세요.'); return; }
+  const showRetail = document.getElementById('quoteShowRetail').checked;
+  const showVat = document.getElementById('quoteShowVat').checked;
+  const showFooter = document.getElementById('quoteShowFooter').checked;
+  const docType = document.querySelector('input[name="docType"]:checked').value;
+  const isStatement = docType === 'statement';
+  const docTitle = isStatement ? '거래명세표' : '견&#xA0;적&#xA0;서';
+  const docTitleDisplay = isStatement ? '거 래 명 세 표' : '견 적 서';
+  const { tripOn, cardOn, retailSum, costSum, tripCharge, delivOn, delivCharge, cardRate, pricing,
+          extraDiscount, finalPriceBase, finalPriceAdj, totalCharge, cardFee, grandTotal } = computeQuoteTotals();
+  let finalPrice = finalPriceAdj;
   const client = document.getElementById('quoteClient').value || '';
   const manager = document.getElementById('quoteManager').value || '';
   const phone = document.getElementById('quotePhone').value || '';
@@ -2241,34 +2409,6 @@ function openQuote() {
   document.getElementById('quoteModal').style.display = 'block';
   lastQuoteTotal = Math.round(grandTotal);
   resetShare();
-
-  // 견적 히스토리 자동 저장
-  const _d = new Date();
-  const _dateStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
-  const _margin = (() => {
-    const cs = pricing.costSum;
-    const fr = Number(document.getElementById('pkgFeeRate').value)/100;
-    const fp = pricing.finalPrice;
-    return fp > 0 ? ((fp - cs - fp*fr) / fp * 100) : null;
-  })();
-  saveQuoteHistory({
-    date: _dateStr,
-    client: document.getElementById('quoteClient').value || '',
-    manager: document.getElementById('quoteManager').value || '',
-    phone: document.getElementById('quotePhone').value || '',
-    itemCount: packageItems.reduce((s,i) => s+i.qty, 0),
-    items: packageItems.map(i => i.price ? { name: i.product.name, brand: i.product.brand || '', qty: i.qty, price: { ...i.price } } : { name: i.product.name, brand: i.product.brand || '', qty: i.qty }),
-    pricing: {
-      scope: pkgScope,
-      mode: pkgMode,
-      discount: Number(document.getElementById('pkgDiscountRate').value) || 0,
-      margin: Number(document.getElementById('pkgMarginRate').value) || 0,
-      direct: Number(document.getElementById('pkgDirectPrice').value) || 0
-    },
-    extras: getExtraCharges(),
-    finalPrice: Math.round(grandTotal),
-    margin: _margin
-  });
 }
 
 function closeQuote() {
@@ -2646,7 +2786,7 @@ function toggleCompare(idx, checked) {
 let compareData = [];
 
 function openCompare() {
-  const history = JSON.parse(localStorage.getItem('dm_quote_history') || '[]');
+  const history = getHistory();
   if (compareSelected.length !== 2) return;
   compareData = compareSelected.map(i => history[i]);
   if (!compareData[0] || !compareData[1]) return;
