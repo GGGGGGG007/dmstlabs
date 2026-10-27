@@ -810,13 +810,16 @@ input[type=number] { -moz-appearance: textfield; }
 
 <div id="quoteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;overflow-y:auto;padding:20px;">
   <div style="max-width:760px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #e0e0e0;background:#f8f8f8;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:14px 20px;border-bottom:1px solid #e0e0e0;background:#f8f8f8;">
       <span style="font-size:13px;font-weight:700;">견적서 미리보기</span>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="shareQuote('pdf')" style="padding:7px 16px;background:#FEE500;color:#191919;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">카톡 공유 (PDF)</button>
+        <button onclick="shareQuote('image')" style="padding:7px 12px;background:#fff;color:#191919;border:1px solid #d6d6d6;border-radius:6px;font-size:12px;cursor:pointer;">이미지로</button>
         <button onclick="printQuote()" style="padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">인쇄 / PDF저장</button>
         <button onclick="closeQuote()" style="padding:7px 16px;background:#eee;color:#333;border:none;border-radius:6px;font-size:12px;cursor:pointer;">닫기</button>
       </div>
     </div>
+    <div id="shareStatus" style="display:none;padding:9px 20px;font-size:12px;color:#333;background:#fffbe0;border-bottom:1px solid #f0e6a0;"></div>
     <div id="quoteContent" style="padding:40px;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#222;max-width:860px;margin:0 auto;"></div>
   </div>
 </div>
@@ -2235,6 +2238,7 @@ function openQuote() {
     ${showFooter ? `<p style="margin-top:14px;font-size:11px;color:#888;border-top:0.5px solid #ddd;padding-top:10px;">${isStatement ? '본 거래명세표는 영수증 용도로도 사용이 가능합니다.' : '본 견적서는 영수증 용도로도 사용이 가능합니다.'}</p>` : ''}
   `;
   document.getElementById('quoteModal').style.display = 'block';
+  resetShare();
 
   // 견적 히스토리 자동 저장
   const _d = new Date();
@@ -2298,6 +2302,169 @@ function printQuote() {
   w.document.close();
   w.focus();
   setTimeout(() => w.print(), 800);
+}
+
+/* ── 카톡 공유 (휴대폰: 공유창 → 카카오톡 / PC: PDF 저장 · 이미지 클립보드 복사) ── */
+const SHARE_LIBS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+];
+let shareLibsPromise = null;
+let sharePrep = null;  // { pdf: File, image: File } 를 만드는 중인 Promise (견적서 열 때마다 새로)
+let shareReady = null; // 만들어진 결과
+
+function isMobileDevice() {
+  if (navigator.userAgentData && navigator.userAgentData.mobile) return true;
+  const ua = navigator.userAgent;
+  return /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+function loadShareLibs() {
+  if (shareLibsPromise) return shareLibsPromise;
+  shareLibsPromise = Promise.all(SHARE_LIBS.map(src => new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = () => fail(new Error('라이브러리를 불러오지 못했어요'));
+    document.head.appendChild(s);
+  }))).catch(e => { shareLibsPromise = null; throw e; });
+  return shareLibsPromise;
+}
+
+function setShareStatus(msg) {
+  const el = document.getElementById('shareStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function shareFileBase() {
+  const isStatement = document.querySelector('input[name="docType"]:checked').value === 'statement';
+  const client = (document.getElementById('quoteClient').value || '').trim();
+  const dIn = document.getElementById('quoteDate').value;
+  const d = dIn ? new Date(dIn) : new Date();
+  const ymd = isNaN(d) ? '' : `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const name = [isStatement ? '거래명세표' : '견적서', client, ymd].filter(Boolean).join('_');
+  return name.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ');
+}
+
+// 견적서를 화면 밖에서 A4 폭으로 다시 그려 고해상도 캔버스로 만든다 (휴대폰 화면 폭과 무관하게 같은 모양)
+async function renderQuoteCanvas() {
+  await loadShareLibs();
+  const box = document.createElement('div');
+  box.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;padding:40px;background:#fff;font-family:'Noto Sans KR',sans-serif;font-size:13px;color:#222;box-sizing:border-box;";
+  box.innerHTML = document.getElementById('quoteContent').innerHTML;
+  document.body.appendChild(box);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const scale = 3;
+    // 페이지를 나눌 때 표의 행 중간이 잘리지 않도록 행 경계 위치를 모아둔다
+    const top = box.getBoundingClientRect().top;
+    const breaks = [...box.querySelectorAll('tr, p, div')].map(e => Math.round((e.getBoundingClientRect().bottom - top) * scale));
+    const canvas = await html2canvas(box, { scale, backgroundColor: '#ffffff', useCORS: true, logging: false });
+    return { canvas, breaks: [...new Set(breaks)].sort((a, b) => a - b) };
+  } finally {
+    box.remove();
+  }
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise(res => canvas.toBlob(res, type, quality));
+}
+
+async function buildShareFiles() {
+  const { canvas, breaks } = await renderQuoteCanvas();
+  const base = shareFileBase();
+  // 이미지: PNG (글자가 깨지지 않게 무손실)
+  const pngBlob = await canvasToBlob(canvas, 'image/png');
+  // PDF: A4 세로, 길면 행 경계에서 여러 장으로 나눔
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
+  const pageW = 210, pageH = 297;
+  const pagePx = Math.floor(canvas.width * pageH / pageW);
+  const topMm = 12; // 두 번째 장부터 위쪽 여백
+  const topPx = Math.round(canvas.width * topMm / pageW);
+  let y = 0, first = true;
+  while (y < canvas.height - 2) {
+    const room = first ? pagePx : pagePx - topPx * 2;
+    let end = Math.min(y + room, canvas.height);
+    if (end < canvas.height) {
+      const cand = breaks.filter(b => b > y + room * 0.5 && b <= end);
+      if (cand.length) end = cand[cand.length - 1];
+    }
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width; slice.height = end - y;
+    const ctx = slice.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(canvas, 0, y, canvas.width, end - y, 0, 0, canvas.width, end - y);
+    if (!first) pdf.addPage();
+    pdf.addImage(slice.toDataURL('image/png'), 'PNG', 0, first ? 0 : topMm, pageW, (end - y) * pageW / canvas.width, undefined, 'FAST');
+    first = false;
+    y = end;
+  }
+  const pdfBlob = pdf.output('blob');
+  return {
+    pdf: new File([pdfBlob], base + '.pdf', { type: 'application/pdf' }),
+    image: new File([pngBlob], base + '.png', { type: 'image/png' }),
+    pngBlob
+  };
+}
+
+// 견적서 미리보기를 열 때마다 호출: 이전 결과를 버리고, 휴대폰이면 미리 만들어 둔다
+// (휴대폰 공유창은 버튼을 누른 직후에만 열 수 있어서, 누를 때 바로 띄울 수 있게 준비)
+function resetShare() {
+  sharePrep = null; shareReady = null;
+  setShareStatus('');
+  if (isMobileDevice()) prepareShare().catch(() => {});
+}
+
+function prepareShare() {
+  if (!sharePrep) {
+    sharePrep = buildShareFiles().then(r => { shareReady = r; return r; })
+      .catch(e => { sharePrep = null; throw e; });
+  }
+  return sharePrep;
+}
+
+function downloadFile(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url; a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+async function shareQuote(kind) {
+  const mobile = isMobileDevice();
+  let files = shareReady;
+  if (!files) {
+    setShareStatus(kind === 'pdf' ? 'PDF 만드는 중...' : '이미지 만드는 중...');
+    try { files = await prepareShare(); }
+    catch (e) { setShareStatus('파일을 만들지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요.'); return; }
+  }
+  const file = kind === 'pdf' ? files.pdf : files.image;
+
+  if (mobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: file.name });
+      setShareStatus('');
+    } catch (e) {
+      if (e && e.name === 'AbortError') { setShareStatus(''); return; } // 공유창을 그냥 닫음
+      if (e && e.name === 'NotAllowedError') { setShareStatus('준비됐어요. 공유 버튼을 한 번 더 눌러주세요.'); return; }
+      downloadFile(file);
+      setShareStatus('공유창을 열 수 없어 파일로 저장했어요. 카카오톡에서 파일 첨부로 보내주세요.');
+    }
+    return;
+  }
+
+  // PC (또는 공유창을 지원하지 않는 브라우저)
+  if (kind === 'image' && navigator.clipboard && window.ClipboardItem) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': files.pngBlob })]);
+      setShareStatus('이미지를 복사했어요. 카카오톡 채팅창에서 Ctrl+V(맥은 Cmd+V)로 붙여넣으세요.');
+      return;
+    } catch (e) { /* 복사가 막히면 아래에서 파일로 저장 */ }
+  }
+  downloadFile(file);
+  setShareStatus(`${file.name} 파일을 저장했어요. 카카오톡 채팅창에 끌어다 놓으면 바로 보내져요.`);
 }
 
 /* ── DRAG AND DROP ── */
