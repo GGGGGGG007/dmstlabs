@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>드럼몬스터 견적서</title>
+<style>
+  body { font-family: 'Noto Sans KR', -apple-system, sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; background:#f6f6f6; color:#222; }
+  .box { text-align:center; padding:32px 24px; }
+  a { display:inline-block; margin-top:14px; padding:10px 20px; background:#191919; color:#fff; border-radius:8px; text-decoration:none; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div style="font-size:18px;font-weight:700;">드럼몬스터</div>
+  <div id="msg" style="margin-top:8px;font-size:14px;color:#555;">견적서를 여는 중이에요...</div>
+  <a id="go" href="#" style="display:none;">PDF 열기</a>
+</div>
+<script>
+  // 카카오톡 메시지의 [PDF 보기] 버튼 → 구글 드라이브에 올려둔 견적서 PDF로 이동
+  var id = new URLSearchParams(location.search).get('id') || '';
+  if (/^[A-Za-z0-9_-]{10,}$/.test(id)) {
+    var url = 'https://drive.google.com/file/d/' + id + '/view';
+    var a = document.getElementById('go'); a.href = url; a.style.display = 'inline-block';
+    location.replace(url);
+  } else {
+    document.getElementById('msg').textContent = '견적서 주소가 올바르지 않아요.';
+  }
+</script>
+</body>
+</html>

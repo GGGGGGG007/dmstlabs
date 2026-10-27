@@ -813,8 +813,9 @@ input[type=number] { -moz-appearance: textfield; }
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:14px 20px;border-bottom:1px solid #e0e0e0;background:#f8f8f8;">
       <span style="font-size:13px;font-weight:700;">견적서 미리보기</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="shareQuote('pdf')" style="padding:7px 16px;background:#FEE500;color:#191919;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">카톡 공유 (PDF)</button>
-        <button onclick="shareQuote('image')" style="padding:7px 12px;background:#fff;color:#191919;border:1px solid #d6d6d6;border-radius:6px;font-size:12px;cursor:pointer;">이미지로</button>
+        <button id="kakaoShareBtn" onclick="kakaoShareQuote()" style="padding:7px 16px;background:#FEE500;color:#191919;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">카톡으로 보내기</button>
+        <button onclick="shareQuote('pdf')" style="padding:7px 12px;background:#fff;color:#191919;border:1px solid #d6d6d6;border-radius:6px;font-size:12px;cursor:pointer;">PDF 파일</button>
+        <button onclick="shareQuote('image')" style="padding:7px 12px;background:#fff;color:#191919;border:1px solid #d6d6d6;border-radius:6px;font-size:12px;cursor:pointer;">이미지</button>
         <button onclick="printQuote()" style="padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">인쇄 / PDF저장</button>
         <button onclick="closeQuote()" style="padding:7px 16px;background:#eee;color:#333;border:none;border-radius:6px;font-size:12px;cursor:pointer;">닫기</button>
       </div>
@@ -2238,6 +2239,7 @@ function openQuote() {
     ${showFooter ? `<p style="margin-top:14px;font-size:11px;color:#888;border-top:0.5px solid #ddd;padding-top:10px;">${isStatement ? '본 거래명세표는 영수증 용도로도 사용이 가능합니다.' : '본 견적서는 영수증 용도로도 사용이 가능합니다.'}</p>` : ''}
   `;
   document.getElementById('quoteModal').style.display = 'block';
+  lastQuoteTotal = Math.round(grandTotal);
   resetShare();
 
   // 견적 히스토리 자동 저장
@@ -2304,7 +2306,90 @@ function printQuote() {
   setTimeout(() => w.print(), 800);
 }
 
-/* ── 카톡 공유 (휴대폰: 공유창 → 카카오톡 / PC: PDF 저장 · 이미지 클립보드 복사) ── */
+/* ── 카카오톡으로 보내기: PDF를 구글 드라이브에 올리고, 카카오 공유창으로 [PDF 보기] 버튼이 달린 메시지 전송 (PC·휴대폰 공통) ── */
+const KAKAO_JS_KEY = 'dd68252829e81850d3063996e323dad1';
+const KAKAO_SDK_URL = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.4/kakao.min.js';
+const PDF_UPLOAD_URL = ''; // ← 견적서 PDF 업로드용 Apps Script 웹 앱 URL
+const PDF_VIEW_URL = 'https://ggggggg007.github.io/dmstlabs/view.html';
+let lastQuoteTotal = 0;
+// 업로드 주소가 설정되기 전에는 [카톡으로 보내기] 버튼을 숨긴다
+if (!PDF_UPLOAD_URL) { const kb = document.getElementById('kakaoShareBtn'); if (kb) kb.style.display = 'none'; }
+let shareUpload = null; // 이번 견적서를 이미 올렸으면 { id } (같은 견적서를 여러 번 보내도 한 번만 업로드)
+let kakaoPromise = null;
+
+function loadKakao() {
+  if (kakaoPromise) return kakaoPromise;
+  kakaoPromise = new Promise((ok, fail) => {
+    if (window.Kakao) return ok();
+    const s = document.createElement('script');
+    s.src = KAKAO_SDK_URL; s.crossOrigin = 'anonymous';
+    s.onload = ok; s.onerror = () => fail(new Error('카카오 SDK를 불러오지 못했어요'));
+    document.head.appendChild(s);
+  }).then(() => { if (!Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); })
+    .catch(e => { kakaoPromise = null; throw e; });
+  return kakaoPromise;
+}
+
+function blobToBase64(blob) {
+  return new Promise((ok, fail) => {
+    const r = new FileReader();
+    r.onload = () => ok(String(r.result).split(',')[1]);
+    r.onerror = () => fail(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+async function uploadQuotePdf() {
+  if (shareUpload) return shareUpload;
+  if (!PDF_UPLOAD_URL) throw new Error('PDF 업로드 주소가 아직 설정되지 않았어요');
+  const files = shareReady || await prepareShare();
+  const res = await fetch(PDF_UPLOAD_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'uploadPdf', name: files.pdf.name, data: await blobToBase64(files.pdf) })
+  });
+  const j = await res.json();
+  if (!j.ok || !j.id) throw new Error(j.error || '업로드 실패');
+  shareUpload = { id: j.id };
+  return shareUpload;
+}
+
+function sendKakaoMessage() {
+  const isStatement = document.querySelector('input[name="docType"]:checked').value === 'statement';
+  const docName = isStatement ? '거래명세표' : '견적서';
+  const client = (document.getElementById('quoteClient').value || '').trim();
+  const url = PDF_VIEW_URL + '?id=' + encodeURIComponent(shareUpload.id);
+  const text = [
+    `[드럼몬스터] ${docName}`,
+    client ? `거래처: ${client}` : '',
+    `합계금액: ${lastQuoteTotal.toLocaleString('ko-KR')}원`,
+    '아래 버튼을 눌러 PDF를 확인해 주세요.'
+  ].filter(Boolean).join('\n');
+  Kakao.Share.sendDefault({
+    objectType: 'text',
+    text,
+    link: { webUrl: url, mobileWebUrl: url },
+    buttonTitle: `${docName} PDF 보기`
+  });
+  setShareStatus('');
+}
+
+async function kakaoShareQuote() {
+  const t0 = Date.now();
+  if (!shareUpload) setShareStatus('PDF를 올리는 중이에요... (몇 초 걸려요)');
+  try {
+    await Promise.all([uploadQuotePdf(), loadKakao()]);
+  } catch (e) {
+    setShareStatus('카톡으로 보내지 못했어요: ' + e.message + '. 잠시 후 다시 눌러주세요.');
+    return;
+  }
+  // 브라우저는 버튼을 누른 직후에만 새 창(카카오 공유창)을 열어줘서, 업로드가 오래 걸렸으면 한 번 더 누르게 한다
+  if (Date.now() - t0 < 4000) { sendKakaoMessage(); return; }
+  const el = document.getElementById('shareStatus');
+  el.innerHTML = '준비됐어요. <button onclick="sendKakaoMessage()" style="margin-left:6px;padding:5px 12px;background:#FEE500;color:#191919;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">카카오톡으로 보내기</button>';
+  el.style.display = 'block';
+}
+
+/* ── 파일로 공유 (휴대폰: 공유창 → 카카오톡 / PC: PDF 저장 · 이미지 클립보드 복사) ── */
 const SHARE_LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
@@ -2411,9 +2496,10 @@ async function buildShareFiles() {
 // 견적서 미리보기를 열 때마다 호출: 이전 결과를 버리고, 휴대폰이면 미리 만들어 둔다
 // (휴대폰 공유창은 버튼을 누른 직후에만 열 수 있어서, 누를 때 바로 띄울 수 있게 준비)
 function resetShare() {
-  sharePrep = null; shareReady = null;
+  sharePrep = null; shareReady = null; shareUpload = null;
   setShareStatus('');
-  if (isMobileDevice()) prepareShare().catch(() => {});
+  prepareShare().catch(() => {});
+  loadKakao().catch(() => {});
 }
 
 function prepareShare() {
