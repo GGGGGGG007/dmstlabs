@@ -852,6 +852,22 @@ input[type=number] { -moz-appearance: textfield; }
   </div>
 </div>
 
+<!-- 이름 입력창 (브라우저 기본 prompt 대신: '대화상자 차단'을 눌러 둔 브라우저에서도 항상 뜬다) -->
+<div id="nameDialog" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <form id="nameDialogForm" style="width:100%;max-width:420px;background:#fff;border-radius:10px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+    <div id="nameDialogTitle" style="font-size:14px;font-weight:700;margin-bottom:6px;"></div>
+    <div id="nameDialogDesc" style="font-size:12px;color:#777;margin-bottom:10px;"></div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input id="nameDialogInput" type="text" autocomplete="off" style="flex:1;min-width:0;padding:9px 10px;border:1px solid #d6d6d6;border-radius:6px;font-size:14px;">
+      <span id="nameDialogExt" style="font-size:13px;color:#777;"></span>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+      <button type="button" id="nameDialogCancel" style="padding:8px 16px;background:#eee;color:#333;border:none;border-radius:6px;font-size:13px;cursor:pointer;">취소</button>
+      <button type="submit" style="padding:8px 16px;background:#191919;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">확인</button>
+    </div>
+  </form>
+</div>
+
 <script>
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycby7Km6iGD4kyucDnXozTRhi3Dosx1SWPH8Mo7dEZb-d6Oyw-z0MGzkbchDW8Z9Zbma7bg/exec';
 const PRESET_URL = 'https://script.google.com/macros/s/AKfycby9Znc-4Ppy4wSsegJDCybCc6nCQpQYgmptK6JtQnn1mTtoMXOAXGxuySUkDZ3tAOVGUg/exec';
@@ -1326,7 +1342,7 @@ async function fetchPresetsFromSheet() {
 
 async function savePreset() {
   if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
-  const name = prompt('프리셋 이름을 입력하세요:');
+  const name = await askName({ title: '프리셋 이름' });
   if (!name || !name.trim()) return;
 
   const items = packageItems.map(i => ({ name: i.product.name, brand: i.product.brand || '', qty: i.qty }));
@@ -1544,10 +1560,36 @@ async function fetchQuotesFromCloud() {
 
 // 저장 이름 기본값: 견적서_거래처_날짜
 function defaultQuoteName() { return shareFileBase(); }
-function askQuoteName(current) {
-  const v = prompt('저장할 이름을 입력하세요 (PDF·이미지 파일명으로도 쓰여요):', current || defaultQuoteName());
+async function askQuoteName(current) {
+  const v = await askName({ title: '저장할 이름', desc: 'PDF·이미지 파일명으로도 쓰여요.', value: current || defaultQuoteName() });
   if (v === null) return null;
   return sanitizeFileName(v) || defaultQuoteName();
+}
+
+// 화면 안에 띄우는 이름 입력창. 확인 → 입력한 글자, 취소·Esc·바깥 클릭 → null
+function askName({ title, desc = '', value = '', ext = '' }) {
+  const dlg = document.getElementById('nameDialog');
+  const form = document.getElementById('nameDialogForm');
+  const input = document.getElementById('nameDialogInput');
+  document.getElementById('nameDialogTitle').textContent = title;
+  document.getElementById('nameDialogDesc').textContent = desc;
+  document.getElementById('nameDialogDesc').style.display = desc ? 'block' : 'none';
+  document.getElementById('nameDialogExt').textContent = ext;
+  input.value = value;
+  dlg.style.display = 'flex';
+  setTimeout(() => { input.focus(); input.select(); }, 0);
+  return new Promise(resolve => {
+    const done = v => {
+      dlg.style.display = 'none';
+      form.onsubmit = null; dlg.onclick = null; input.onkeydown = null;
+      document.getElementById('nameDialogCancel').onclick = null;
+      resolve(v);
+    };
+    form.onsubmit = e => { e.preventDefault(); done(input.value); };
+    document.getElementById('nameDialogCancel').onclick = () => done(null);
+    dlg.onclick = e => { if (e.target === dlg) done(null); };
+    input.onkeydown = e => { if (e.key === 'Escape') done(null); };
+  });
 }
 
 // 현재 화면 상태로 견적 기록 만들기
@@ -1588,9 +1630,9 @@ function openHistoryAccordion() {
 }
 
 // 새로 저장: 현재 견적을 새 기록으로 추가
-function saveQuoteNew() {
+async function saveQuoteNew() {
   if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
-  const name = askQuoteName();
+  const name = await askQuoteName();
   if (name === null) return;
   const entry = { id: newHistoryId(), name, ...buildHistoryEntry(), _unsynced: true };
   const history = getHistory();
@@ -1606,11 +1648,11 @@ function saveQuoteNew() {
 }
 
 // 이름 바꾸기
-function renameHistory(id) {
+async function renameHistory(id) {
   const history = getHistory();
   const h = history.find(x => x.id === id);
   if (!h) return;
-  const name = askQuoteName(h.name || h.client);
+  const name = await askQuoteName(h.name || h.client);
   if (name === null || name === h.name) return;
   h.name = name; h._unsynced = true;
   setHistory(history);
@@ -1619,14 +1661,14 @@ function renameHistory(id) {
 }
 
 // 수정 저장: 불러온 견적을 그 자리에서 덮어쓰기
-function saveQuoteEdit() {
+async function saveQuoteEdit() {
   if (!editingHistoryId) return;
   if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
   const history = getHistory();
   const idx = history.findIndex(h => h.id === editingHistoryId);
   if (idx < 0) { alert('수정하던 견적이 목록에 없습니다. 새로 저장해 주세요.'); clearEditing(); return; }
   const prevName = history[idx].name || '';
-  const name = askQuoteName(prevName || history[idx].client);
+  const name = await askQuoteName(prevName || history[idx].client);
   if (name === null) return;
   history[idx] = { id: editingHistoryId, name, ...buildHistoryEntry(), _unsynced: true };
   setHistory(history);
@@ -2833,11 +2875,21 @@ async function getShareFiles(kind) {
 
 // 파일로 저장: 가능하면 저장 위치·이름을 고르는 창, 아니면 적힌 파일명으로 다운로드
 async function saveQuoteFile(kind) {
-  let handle = null;
-  try { handle = await pickSaveHandle(kind); } // 버튼을 누른 직후에 창을 띄워야 해서 파일 만들기보다 먼저
+  let handle = null, pickerOk = false;
+  const t0 = Date.now();
+  try { handle = await pickSaveHandle(kind); pickerOk = !!handle; } // 버튼을 누른 직후에 창을 띄워야 해서 파일 만들기보다 먼저
   catch (e) {
-    if (e && e.name === 'AbortError') { setShareStatus(''); return; } // 저장 창을 그냥 닫음
+    // 사람이 직접 [취소]를 눌렀을 때만 그만둔다. 창이 아예 안 뜨고 바로 실패한 경우(브라우저 설정·정책·앱 내 브라우저)는 아래 다운로드로
+    if (e && e.name === 'AbortError' && Date.now() - t0 > 700) { setShareStatus(''); return; }
     handle = null;
+  }
+  // 저장 창을 쓸 수 없으면 여기서 파일 이름을 정한다
+  if (!pickerOk) {
+    const ext = kind === 'pdf' ? '.pdf' : '.png';
+    const v = await askName({ title: '파일 이름', desc: '이 이름으로 다운로드 폴더에 저장돼요.', value: currentShareFileName(), ext });
+    if (v === null) { setShareStatus(''); return; }
+    const el = document.getElementById('shareFileName');
+    if (el) el.value = sanitizeFileName(v) || shareFileBase();
   }
   const files = await getShareFiles(kind);
   if (!files) return;
@@ -2851,7 +2903,7 @@ async function saveQuoteFile(kind) {
     } catch (e) { /* 실패하면 아래에서 다운로드로 저장 */ }
   }
   downloadFile(file);
-  setShareStatus(`${file.name} 파일을 저장했어요. 카카오톡 채팅창에 끌어다 놓으면 바로 보내져요.`);
+  setShareStatus(`${file.name} 파일을 다운로드 폴더에 저장했어요. 카카오톡 채팅창에 끌어다 놓으면 바로 보내져요.`);
 }
 
 async function shareQuote(kind) {
