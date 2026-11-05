@@ -104,8 +104,9 @@ input[type=range]#priceMax { z-index: 4; }
 .history-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
 .history-item-info { flex: 1; min-width: 0; }
 .history-item-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-.history-name { cursor: text; border-bottom: 1px dashed transparent; }
-.history-name:hover { border-bottom-color: var(--text3); }
+.history-row { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.history-row:hover { border-color: var(--blue); }
+.history-name { border-bottom: 1px dashed transparent; }
 .history-name-input { width: 200px; max-width: 100%; font-size: 12px; font-weight: 700; font-family: inherit; color: var(--text); border: none; border-bottom: 1.5px solid var(--blue); background: transparent; outline: none; padding: 0; }
 .pkg-qty { cursor: text; }
 .pkg-qty:hover { outline: 1px solid var(--blue); }
@@ -1803,22 +1804,28 @@ function renderQuoteHistory() {
   el.innerHTML = toolbar + `<div class="history-list">` + history.map((h, i) => {
     const sel = historySelected.has(h.id);
     const editing = h.id === editingHistoryId;
-    const check = `<input type="checkbox" class="history-item-check" ${sel ? 'checked' : ''} onchange="toggleHistorySelect('${h.id}', this.checked)">`;
-    const actions = `
-      <div class="history-item-actions">
-        <button class="history-btn load" onclick="loadHistory(${i})">불러오기</button>
-      </div>`;
-    return `<div class="history-item${sel ? ' selected' : ''}${editing ? ' editing' : ''}">
+    const check = `<input type="checkbox" class="history-item-check" ${sel ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleHistorySelect('${h.id}', this.checked)">`;
+    // 항목 아무 데나 클릭 → 불러오기 (체크박스는 선택만, 이름은 더블클릭으로 수정)
+    return `<div class="history-item history-row${sel ? ' selected' : ''}${editing ? ' editing' : ''}" onclick="historyRowClick(event, ${i})" title="클릭해서 불러오기 · 이름은 더블클릭해서 수정">
       ${check}
       <div class="history-item-info">
-        <div class="history-item-title"><span class="history-name" onclick="startEditHistoryName('${h.id}', this)" title="클릭하여 이름 수정">${escHtml(h.name || h.client) || '(거래처 없음)'}</span>${h._unsynced ? ' <span title="아직 클라우드에 올라가지 않았어요" style="font-size:10px;color:var(--red);">●</span>' : ''} <span style="font-size:10px;color:var(--text3);font-weight:400;">${escHtml(h.date)}</span>${editing ? '<span class="history-edit-tag">수정 중</span>' : ''}</div>
+        <div class="history-item-title"><span class="history-name" ondblclick="event.stopPropagation();clearTimeout(historyClickTimer);startEditHistoryName('${h.id}', this)">${escHtml(h.name || h.client) || '(거래처 없음)'}</span>${h._unsynced ? ' <span title="아직 클라우드에 올라가지 않았어요" style="font-size:10px;color:var(--red);">●</span>' : ''} <span style="font-size:10px;color:var(--text3);font-weight:400;">${escHtml(h.date)}</span>${editing ? '<span class="history-edit-tag">수정 중</span>' : ''}</div>
         <div class="history-item-meta">${h.name && h.client ? escHtml(h.client) + ' · ' : ''}${h.itemCount}개 상품${h.margin != null ? ' · 수익률 ' + h.margin.toFixed(1) + '%' : ''}</div>
       </div>
-      <div class="history-item-price">${Number(h.finalPrice || 0).toLocaleString('ko-KR')}원</div>${actions}
+      <div class="history-item-price">${Number(h.finalPrice || 0).toLocaleString('ko-KR')}원</div>
     </div>`;
   }).join('') + '</div>';
   const master = document.getElementById('historyMasterCheck');
   if (master) master.indeterminate = n > 0 && !allSel;
+}
+
+// 항목 클릭 → 불러오기. 이름 위 클릭은 더블클릭(이름 수정)일 수 있어 잠깐 기다렸다가 불러온다
+let historyClickTimer = null;
+function historyRowClick(e, idx) {
+  clearTimeout(historyClickTimer);
+  if (e.target.closest('input')) return; // 체크박스·이름 입력칸 클릭은 불러오기 아님
+  if (e.target.closest('.history-name')) historyClickTimer = setTimeout(() => loadHistory(idx), 250);
+  else loadHistory(idx);
 }
 
 function toggleHistorySelect(id, checked) {
