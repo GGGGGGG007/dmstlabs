@@ -106,7 +106,6 @@ input[type=range]#priceMax { z-index: 4; }
 .history-item-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .history-name { cursor: text; border-bottom: 1px dashed transparent; }
 .history-name:hover { border-bottom-color: var(--text3); }
-.history-list.delete-mode .history-name { cursor: default; border-bottom-color: transparent; }
 .history-name-input { width: 200px; max-width: 100%; font-size: 12px; font-weight: 700; font-family: inherit; color: var(--text); border: none; border-bottom: 1.5px solid var(--blue); background: transparent; outline: none; padding: 0; }
 .pkg-qty { cursor: text; }
 .pkg-qty:hover { outline: 1px solid var(--blue); }
@@ -144,8 +143,12 @@ input[type=range]#priceMax { z-index: 4; }
 .history-tool-btn { font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border2); background: var(--surface); color: var(--text2); cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
 .history-tool-btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
 .history-tool-btn.danger:disabled { opacity: 0.4; cursor: default; }
-.history-list.delete-mode .history-item { border-color: #f3c4c0; }
-.history-list.delete-mode .history-item.selected { background: #fdeceb; border-color: var(--red); }
+.history-item.selected { background: var(--blue-light); border-color: var(--blue); }
+.history-tool-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.history-tool-btn:disabled { opacity: 0.4; cursor: default; }
+.history-sel-count { font-size: 11px; font-weight: 700; color: var(--blue); }
+.history-hint { font-size: 11px; color: var(--text3); }
+.compare-scroll { overflow-x: auto; }
 .history-item.editing { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
 .history-edit-tag { font-size: 10px; color: var(--blue); font-weight: 700; margin-left: 4px; }
 .quote-save-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -769,7 +772,6 @@ input[type=number] { -moz-appearance: textfield; }
           <div id="quoteHistoryList" style="display:none;">
             <span class="history-empty">저장된 견적이 없습니다</span>
           </div>
-          <button id="compareBtn" class="compare-btn" onclick="openCompare()">선택한 2개 견적 비교</button>
         </div>
         <div class="rp-section">
           <div class="section-title">출력 설정</div>
@@ -928,7 +930,6 @@ let pkgScope = 'bulk'; // 'bulk' = 일괄 적용, 'item' = 상품별 설정
 let tabMode = 'single'; // 'single' | 'package'
 let viewMode = localStorage.getItem('dm_view_mode') || 'grid';
 let packageItems = []; // { product, qty }
-let compareSelected = [];
 let filters = { category: null, subcategory: null, brand: null, priceMin: 0, priceMax: Infinity };
 
 const fmt = n => n == null ? '-' : Math.round(n).toLocaleString('ko-KR') + '원';
@@ -1469,8 +1470,7 @@ function startEditChipName(idx, el) {
 
 /* ── QUOTE HISTORY ── */
 let editingHistoryId = null;   // 불러와서 수정 중인 견적 id
-let historyDeleteMode = false; // 선택 삭제 모드
-let deleteSelected = new Set();
+let historySelected = new Set(); // 히스토리에서 체크한 견적 id (선택한 순서 = 비교표 A안, B안... 순서)
 
 function newHistoryId() { return 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
@@ -1665,7 +1665,6 @@ async function saveQuoteNew() {
 
 // 이름 바꾸기: 기록의 이름 글자를 클릭하면 그 자리에서 입력칸으로 바뀜 (Enter 또는 바깥 클릭으로 저장)
 function startEditHistoryName(id, el) {
-  if (historyDeleteMode) return;
   const h = getHistory().find(x => x.id === id);
   if (!h) return;
   const current = h.name || h.client || '';
@@ -1783,41 +1782,39 @@ function renderQuoteHistory() {
   if (!el) return;
   const history = getHistory();
   updateEditingUI(history);
-  compareSelected = [];
-  const btn = document.getElementById('compareBtn');
-  if (btn) btn.classList.remove('visible');
   if (!history.length) {
-    historyDeleteMode = false; deleteSelected.clear();
+    historySelected.clear();
     el.innerHTML = '<span class="history-empty">저장된 견적이 없습니다</span>';
     return;
   }
   // 없어진 기록은 선택에서 뺀다
-  deleteSelected = new Set([...deleteSelected].filter(id => history.some(h => h.id === id)));
-  const n = deleteSelected.size;
-  const toolbar = historyDeleteMode
+  historySelected = new Set([...historySelected].filter(id => history.some(h => h.id === id)));
+  const n = historySelected.size;
+  const allSel = n === history.length;
+  // 체크박스 하나로 비교·삭제를 함께 처리: 선택하면 위에 동작 버튼이 나타난다
+  const toolbar = n
     ? `<div class="history-toolbar">
-         <button class="history-tool-btn" onclick="toggleSelectAllHistory()">${n === history.length ? '전체 해제' : '전체 선택'}</button>
+         <span class="history-sel-count">${n}개 선택됨</span>
+         ${allSel ? '' : '<button class="history-tool-btn" onclick="selectAllHistory()">전체 선택</button>'}
+         <button class="history-tool-btn" onclick="clearHistorySelection()">선택 해제</button>
          <span class="spacer"></span>
-         <button class="history-tool-btn" onclick="setHistoryDeleteMode(false)">취소</button>
-         <button class="history-tool-btn danger" onclick="deleteSelectedHistory()" ${n ? '' : 'disabled'}>선택한 ${n}개 삭제</button>
+         <button class="history-tool-btn primary" onclick="openCompare()" ${n >= 2 ? '' : 'disabled title="2개 이상 선택하면 비교할 수 있어요"'}>비교하기</button>
+         <button class="history-tool-btn danger" onclick="deleteSelectedHistory()">삭제</button>
        </div>`
     : `<div class="history-toolbar">
-         <span style="font-size:11px;color:var(--text3);">체크 2개 → 비교</span>
+         <span class="history-hint">체크해서 비교·삭제</span>
          <span class="spacer"></span>
-         <button class="history-tool-btn" onclick="setHistoryDeleteMode(true)">선택 삭제</button>
+         <button class="history-tool-btn" onclick="selectAllHistory()">전체 선택</button>
        </div>`;
-  el.innerHTML = toolbar + `<div class="history-list${historyDeleteMode ? ' delete-mode' : ''}">` + history.map((h, i) => {
-    const sel = deleteSelected.has(h.id);
+  el.innerHTML = toolbar + `<div class="history-list">` + history.map((h, i) => {
+    const sel = historySelected.has(h.id);
     const editing = h.id === editingHistoryId;
-    const check = historyDeleteMode
-      ? `<input type="checkbox" class="history-item-check" ${sel ? 'checked' : ''} onchange="toggleDeleteSelect('${h.id}', this.checked)">`
-      : `<input type="checkbox" class="history-item-check" id="compare_${i}" onchange="toggleCompare(${i}, this.checked)">`;
-    const actions = historyDeleteMode ? '' : `
+    const check = `<input type="checkbox" class="history-item-check" ${sel ? 'checked' : ''} onchange="toggleHistorySelect('${h.id}', this.checked)">`;
+    const actions = `
       <div class="history-item-actions">
-        <button class="history-btn del" onclick="deleteHistory(${i})">삭제</button>
         <button class="history-btn load" onclick="loadHistory(${i})">불러오기</button>
       </div>`;
-    return `<div class="history-item${sel ? ' selected' : ''}${editing && !historyDeleteMode ? ' editing' : ''}">
+    return `<div class="history-item${sel ? ' selected' : ''}${editing ? ' editing' : ''}">
       ${check}
       <div class="history-item-info">
         <div class="history-item-title"><span class="history-name" onclick="startEditHistoryName('${h.id}', this)" title="클릭하여 이름 수정">${escHtml(h.name || h.client) || '(거래처 없음)'}</span>${h._unsynced ? ' <span title="아직 클라우드에 올라가지 않았어요" style="font-size:10px;color:var(--red);">●</span>' : ''} <span style="font-size:10px;color:var(--text3);font-weight:400;">${escHtml(h.date)}</span>${editing ? '<span class="history-edit-tag">수정 중</span>' : ''}</div>
@@ -1828,41 +1825,26 @@ function renderQuoteHistory() {
   }).join('') + '</div>';
 }
 
-// 선택 삭제 모드 켜기/끄기 (켜면 비교 선택은 풀린다)
-function setHistoryDeleteMode(on) {
-  historyDeleteMode = on;
-  deleteSelected.clear();
+function toggleHistorySelect(id, checked) {
+  if (checked) historySelected.add(id); else historySelected.delete(id);
   renderQuoteHistory();
 }
-function toggleDeleteSelect(id, checked) {
-  if (checked) deleteSelected.add(id); else deleteSelected.delete(id);
+function selectAllHistory() {
+  getHistory().forEach(h => historySelected.add(h.id));
   renderQuoteHistory();
 }
-function toggleSelectAllHistory() {
-  const history = getHistory();
-  if (deleteSelected.size === history.length) deleteSelected.clear();
-  else history.forEach(h => deleteSelected.add(h.id));
+function clearHistorySelection() {
+  historySelected.clear();
   renderQuoteHistory();
 }
 function deleteSelectedHistory() {
-  const n = deleteSelected.size;
+  const n = historySelected.size;
   if (!n) return;
-  if (!confirm(`선택한 ${n}개 견적을 삭제할까요?`)) return;
-  setHistory(getHistory().filter(h => !deleteSelected.has(h.id)));
-  deleteQuotesFromCloud([...deleteSelected]);
-  if (deleteSelected.has(editingHistoryId)) editingHistoryId = null;
-  historyDeleteMode = false;
-  deleteSelected.clear();
-  renderQuoteHistory();
-}
-
-function deleteHistory(idx) {
-  const history = getHistory();
-  if (!confirm('이 견적 기록을 삭제할까요?')) return;
-  const [removed] = history.splice(idx, 1);
-  if (removed && removed.id === editingHistoryId) editingHistoryId = null;
-  setHistory(history);
-  if (removed) deleteQuotesFromCloud([removed.id]);
+  if (!confirm(n === 1 ? '선택한 견적을 삭제할까요?' : `선택한 ${n}개 견적을 삭제할까요?`)) return;
+  setHistory(getHistory().filter(h => !historySelected.has(h.id)));
+  deleteQuotesFromCloud([...historySelected]);
+  if (historySelected.has(editingHistoryId)) editingHistoryId = null;
+  historySelected.clear();
   renderQuoteHistory();
 }
 
@@ -3113,46 +3095,33 @@ function initDragAndDrop() {
 
 /* ── COMPARE ── */
 
-function toggleCompare(idx, checked) {
-  if (checked) {
-    if (compareSelected.length >= 2) {
-      alert('최대 2개까지 선택할 수 있습니다.');
-      const cb = document.getElementById('compare_' + idx);
-      if (cb) cb.checked = false;
-      return;
-    }
-    compareSelected.push(idx);
-  } else {
-    compareSelected = compareSelected.filter(i => i !== idx);
-  }
-  const btn = document.getElementById('compareBtn');
-  if (btn) btn.classList.toggle('visible', compareSelected.length === 2);
-}
-
 let compareData = [];
 
+// 비교: 체크한 견적(2개 이상, 개수 제한 없음)을 선택한 순서대로 A안, B안, C안...
 function openCompare() {
   const history = getHistory();
-  if (compareSelected.length !== 2) return;
-  compareData = compareSelected.map(i => history[i]);
-  if (!compareData[0] || !compareData[1]) return;
+  compareData = [...historySelected].map(id => history.find(h => h.id === id)).filter(h => h && h.items);
+  if (compareData.length < 2) { alert('비교할 견적을 2개 이상 선택하세요.'); return; }
   renderCompareTable();
   document.getElementById('compareModal').style.display = 'block';
 }
 
+function planLabel(i) { return i < 26 ? String.fromCharCode(65 + i) + '안' : (i + 1) + '안'; }
+
 function renderCompareTable() {
   if (!compareData.length) return;
-  const [a, b] = compareData;
+  const quotes = compareData;
+  const n = quotes.length;
   const isInternal = document.querySelector('input[name="compareMode"]:checked')?.value !== 'customer';
 
-  // 서브카테고리별 그룹핑
+  // 서브카테고리별 그룹핑: grouped[cat][안 번호] = 상품 목록
   const grouped = {};
-  [a, b].forEach((quote, qi) => {
+  quotes.forEach((quote, qi) => {
     quote.items.forEach(item => {
       const prod = findProduct(item.name, item.brand);
       const cat = (prod && (prod.subcategory || prod.category)) || '기타';
-      if (!grouped[cat]) grouped[cat] = { a: [], b: [] };
-      grouped[cat][qi === 0 ? 'a' : 'b'].push(item);
+      if (!grouped[cat]) grouped[cat] = quotes.map(() => []);
+      grouped[cat][qi].push(item);
     });
   });
 
@@ -3164,46 +3133,44 @@ function renderCompareTable() {
     return `<span style="font-size:12px;font-weight:700;">${item.name}</span>${item.qty > 1 ? `<span style="font-size:11px;color:#888;"> x${item.qty}</span>` : ''}<br><span style="font-size:12px;color:#333;">${(price*item.qty).toLocaleString('ko-KR')}원</span>${isInternal ? `<br><span style="font-size:11px;color:#e05c2a;">원가 ${(cost*item.qty).toLocaleString('ko-KR')}원</span>` : ''}`;
   };
 
-  const tdStyle = 'padding:7px 10px;border-bottom:0.5px solid #e0e0e0;vertical-align:middle;text-align:center;font-size:12px;';
+  const tdStyle = 'padding:7px 10px;border-bottom:0.5px solid #e0e0e0;vertical-align:middle;text-align:center;font-size:12px;word-break:keep-all;overflow-wrap:anywhere;';
   const catTdStyle = 'padding:7px 8px;font-size:11px;font-weight:700;color:#666;text-align:center;width:100px;';
 
   const rows = Object.entries(grouped).map(([cat, sides]) => {
-    const maxLen = Math.max(sides.a.length, sides.b.length);
+    const maxLen = Math.max(...sides.map(s => s.length));
     return Array.from({ length: maxLen }, (_, i) => {
-      const ai = sides.a[i];
-      const bi = sides.b[i];
-      // 첫 번째 행에만 카테고리 표시, rowspan 처리
-      const catCell = i === 0
-        ? `<td rowspan="${maxLen}" style="${catTdStyle}">${cat}</td>`
-        : '';
-      return `<tr style="${i===0?'border-top:0.5px solid #ddd;':''}">${catCell}<td style="${tdStyle}">${makeCell(ai, isInternal)}</td><td style="${tdStyle}">${makeCell(bi, isInternal)}</td></tr>`;
+      const catCell = i === 0 ? `<td rowspan="${maxLen}" style="${catTdStyle}">${cat}</td>` : '';
+      return `<tr style="${i===0?'border-top:0.5px solid #ddd;':''}">${catCell}${sides.map(s => `<td style="${tdStyle}">${makeCell(s[i], isInternal)}</td>`).join('')}</tr>`;
     }).join('');
   }).join('');
 
   const totalTdStyle = 'padding:8px 10px;font-weight:700;color:#2563eb;font-size:12px;text-align:center;border-bottom:none;';
   const totalRow = `<tr style="border-top:0.5px solid #e0e0e0;">
     <td style="${totalTdStyle}">최종 금액</td>
-    <td style="${totalTdStyle}font-size:13px;">${a.finalPrice.toLocaleString('ko-KR')}원</td>
-    <td style="${totalTdStyle}font-size:13px;">${b.finalPrice.toLocaleString('ko-KR')}원</td>
+    ${quotes.map(q => `<td style="${totalTdStyle}font-size:13px;">${Number(q.finalPrice || 0).toLocaleString('ko-KR')}원</td>`).join('')}
   </tr>`;
-  const marginRow = isInternal && a.margin != null && b.margin != null
+  const marginRow = isInternal && quotes.some(q => q.margin != null)
     ? `<tr>
         <td style="${totalTdStyle}">수익률</td>
-        <td style="${totalTdStyle}font-size:13px;">${a.margin.toFixed(1)}%</td>
-        <td style="${totalTdStyle}font-size:13px;">${b.margin.toFixed(1)}%</td>
+        ${quotes.map(q => `<td style="${totalTdStyle}font-size:13px;">${q.margin != null ? q.margin.toFixed(1) + '%' : '-'}</td>`).join('')}
       </tr>` : '';
 
+  // 화면에서는 안이 많으면 옆으로 스크롤 (인쇄 때는 폭에 맞춰 줄바꿈)
+  const minW = 100 + n * 150;
   document.getElementById('compareContent').innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-family:'Noto Sans KR',sans-serif;">
+    <div class="compare-scroll">
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:'Noto Sans KR',sans-serif;" data-minw="${minW}">
       <thead>
         <tr style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#3a3a3a;">
           <th style="padding:7px 10px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:100px;">구분</th>
-          <th style="padding:7px 10px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:40%;">A안</th>
-          <th style="padding:7px 10px;color:#fff;font-size:12px;font-weight:500;text-align:center;width:40%;">B안</th>
+          ${quotes.map((q, i) => `<th style="padding:7px 10px;color:#fff;font-size:12px;font-weight:500;text-align:center;">${planLabel(i)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>${rows}${totalRow}${marginRow}</tbody>
-    </table>`;
+    </table>
+    </div>`;
+  const tbl = document.querySelector('#compareContent table');
+  if (tbl) tbl.style.minWidth = minW + 'px';
 }
 
 /* ── CLIENT LIST ── */
@@ -3270,8 +3237,7 @@ function closeCompare() {
 }
 
 function printCompare() {
-  const content = document.getElementById('compareContent').innerHTML;
-  const [a, b] = compareData;
+  const content = document.getElementById('compareContent').innerHTML.replace(/min-width:\s*\d+px;?/g, '');
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
   const client = document.getElementById('quoteClient').value || '';
