@@ -330,6 +330,8 @@ input[type=range]#priceMax { z-index: 4; }
 .client-list-item-del:hover { color: #dc2626; background: #fee2e2; }
 .client-list-btn { font-size: 10px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text3); cursor: pointer; transition: all 0.15s; margin-left: 4px; font-family: 'Noto Sans KR', sans-serif; }
 .client-list-btn:hover { border-color: var(--blue); color: var(--blue); }
+.save-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(10px); background: #1f1f1f; color: #fff; font-size: 13px; padding: 9px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 2000; font-family: 'Noto Sans KR', sans-serif; }
+.save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .quote-reset-btn { display: block; width: 100%; padding: 8px; margin-bottom: 10px; border: 1.5px dashed var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text2); font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.15s; }
 .quote-reset-btn:hover { border-color: var(--red); color: var(--red); border-style: solid; }
 
@@ -797,8 +799,8 @@ input[type=number] { -moz-appearance: textfield; }
           </div>
           <div id="editingBanner" class="editing-banner"><span id="editingBannerText"></span><button onclick="clearEditing()">수정 취소 ✕</button></div>
           <div class="quote-save-row">
-            <button class="quote-save-btn" onclick="saveQuoteNew()">새로 저장</button>
-            <button class="quote-save-btn" id="quoteEditSaveBtn" onclick="saveQuoteEdit()" disabled>수정 저장</button>
+            <button class="quote-save-btn" id="quoteEditSaveBtn" onclick="saveQuoteEdit()">저장</button>
+            <button class="quote-save-btn" onclick="saveQuoteNew()">다른 이름으로 저장</button>
           </div>
           <button onclick="openQuote()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;">미리보기 &amp; 출력</button>
         </div>
@@ -1563,10 +1565,20 @@ async function fetchQuotesFromCloud() {
   renderQuoteHistory();
 }
 
+// 저장 완료를 잠깐 보여주는 알림 (확인 버튼 없이 자동으로 사라짐)
+function showSaveToast(msg) {
+  let el = document.getElementById('saveToast');
+  if (!el) { el = document.createElement('div'); el.id = 'saveToast'; el.className = 'save-toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showSaveToast._t);
+  showSaveToast._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
 // 저장 이름 기본값: 견적서_거래처_날짜
 function defaultQuoteName() { return shareFileBase(); }
-async function askQuoteName(current) {
-  const v = await askName({ title: '저장할 이름', desc: 'PDF·이미지 파일명으로도 쓰여요.', value: current || defaultQuoteName() });
+async function askQuoteName(current, title = '다른 이름으로 저장') {
+  const v = await askName({ title, value: current || defaultQuoteName() });
   if (v === null) return null;
   return sanitizeFileName(v) || defaultQuoteName();
 }
@@ -1634,7 +1646,7 @@ function openHistoryAccordion() {
   if (icon) icon.textContent = '▼';
 }
 
-// 새로 저장: 현재 견적을 새 기록으로 추가
+// 다른 이름으로 저장: 이름을 정해 현재 견적을 새 기록으로 추가
 async function saveQuoteNew() {
   if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
   const name = await askQuoteName();
@@ -1646,9 +1658,10 @@ async function saveQuoteNew() {
   editingHistoryId = entry.id; // 저장 직후부터는 이 견적을 수정하는 상태
   openHistoryAccordion();
   renderQuoteHistory();
+  showSaveToast(`"${name}" 저장했습니다`);
   pushQuoteToCloud(entry).then(ok => {
     renderQuoteHistory();
-    alert(ok ? `"${name}" 견적을 클라우드에 저장했습니다.` : `"${name}" 견적을 이 기기에 저장했습니다.\n클라우드에 연결되면 자동으로 올라갑니다.`);
+    if (!ok) alert(`"${name}" 견적을 이 기기에 저장했습니다.\n클라우드에 연결되면 자동으로 올라갑니다.`);
   });
 }
 
@@ -1680,24 +1693,23 @@ function startEditHistoryName(id, el) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
 }
 
-// 수정 저장: 불러온 견적을 그 자리에서 덮어쓰기
+// 저장: 불러온(이미 저장한) 견적이면 묻지 않고 같은 이름으로 덮어쓰기, 처음 저장이면 이름을 묻고 새로 저장
 async function saveQuoteEdit() {
-  if (!editingHistoryId) return;
+  if (!editingHistoryId) return saveQuoteNew();
   if (!packageItems.length) { alert('패키지에 상품을 추가한 후 저장하세요.'); return; }
   const history = getHistory();
   const idx = history.findIndex(h => h.id === editingHistoryId);
-  if (idx < 0) { alert('수정하던 견적이 목록에 없습니다. 새로 저장해 주세요.'); clearEditing(); return; }
-  const prevName = history[idx].name || '';
-  const name = await askQuoteName(prevName || history[idx].client);
-  if (name === null) return;
+  if (idx < 0) { clearEditing(); return saveQuoteNew(); }
+  const name = history[idx].name || sanitizeFileName(history[idx].client) || defaultQuoteName();
   history[idx] = { id: editingHistoryId, name, ...buildHistoryEntry(), _unsynced: true };
   setHistory(history);
   openHistoryAccordion();
   renderQuoteHistory();
   const entry = history[idx];
+  showSaveToast(`"${name}" 저장했습니다`);
   pushQuoteToCloud(entry).then(ok => {
     renderQuoteHistory();
-    alert(ok ? `"${name}" 견적을 수정해 클라우드에 저장했습니다.` : `"${name}" 견적을 이 기기에서 수정했습니다.\n클라우드에 연결되면 자동으로 올라갑니다.`);
+    if (!ok) alert(`"${name}" 견적을 이 기기에 저장했습니다.\n클라우드에 연결되면 자동으로 올라갑니다.`);
   });
 }
 
@@ -1755,7 +1767,7 @@ function updateEditingUI(history) {
     banner.classList.toggle('visible', !!h);
     if (h) document.getElementById('editingBannerText').textContent = `수정 중: ${h.name || h.client || '(거래처 없음)'} · ${h.date}`;
   }
-  if (btn) btn.disabled = !h;
+  if (btn) btn.disabled = false;
 }
 
 function toggleHistoryAccordion() {
