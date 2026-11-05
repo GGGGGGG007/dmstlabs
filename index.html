@@ -477,11 +477,8 @@ input[type=number] { -moz-appearance: textfield; }
   </div>
 </div>
 
-<div class="tab-bar">
-  <button class="tab-btn active" id="tabSingle" onclick="switchTab('single')">단품</button>
-  <button class="tab-btn" id="tabPackage" onclick="switchTab('package')">패키지&#xB7;견적</button>
-</div>
-<div id="presetSubBar" style="display:none; background:var(--surface); border-bottom:1px solid var(--border); padding:6px 16px; display:none; align-items:center; gap:6px; position:sticky; top:94px; z-index:98;">
+<!-- 단품 탭은 없앰: 패키지·견적에서 1개만 고르면 단품과 같다 -->
+<div id="presetSubBar" style="display:none; background:var(--surface); border-bottom:1px solid var(--border); padding:6px 16px; display:none; align-items:center; gap:6px; position:sticky; top:52px; z-index:98; min-height:42px; box-sizing:border-box;">
   <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:0.8px;text-transform:uppercase;white-space:nowrap;margin-right:4px;">PRESET</span>
   <div id="presetSubChips" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;"></div>
   <button class="preset-add-btn" onclick="savePreset()" style="margin-left:4px;">+ 저장</button>
@@ -928,7 +925,7 @@ function lockInput(v) {
 let allProducts = [], filteredProducts = [], selectedProduct = null;
 let mode = 'discount', pkgMode = 'discount';
 let pkgScope = 'bulk'; // 'bulk' = 일괄 적용, 'item' = 상품별 설정
-let tabMode = 'single'; // 'single' | 'package'
+let tabMode = 'package'; // 단품 탭은 없앰 → 항상 패키지·견적
 let viewMode = localStorage.getItem('dm_view_mode') || 'grid';
 let packageItems = []; // { product, qty }
 let filters = { category: null, subcategory: null, brand: null, priceMin: 0, priceMax: Infinity };
@@ -958,8 +955,8 @@ function setViewMode(mode) {
 /* ── TAB ── */
 function switchTab(t) {
   tabMode = t;
-  document.getElementById('tabSingle').classList.toggle('active', t === 'single');
-  document.getElementById('tabPackage').classList.toggle('active', t === 'package');
+  document.getElementById('tabSingle')?.classList.toggle('active', t === 'single');
+  document.getElementById('tabPackage')?.classList.toggle('active', t === 'package');
   document.getElementById('singlePanel').classList.toggle('hidden', t !== 'single');
   document.getElementById('packagePanel').classList.toggle('hidden', t !== 'package');
   document.getElementById('rightPanelTitle').innerHTML = t === 'single' ? '판매가 설정 &amp; 수익 분析' : '패키지 견적';
@@ -2460,6 +2457,7 @@ function calculatePkg() {
 
 setMode('discount');
 setPkgMode('discount');
+switchTab('package'); // 처음부터 패키지·견적 화면
 renderPresets();       // 로컬 캐시 즉시 표시
 renderQuoteHistory();  // 견적 히스토리 표시
 fetchPresetsFromSheet(); // 백그라운드에서 구글 시트 동기화
