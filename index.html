@@ -104,8 +104,7 @@ input[type=range]#priceMax { z-index: 4; }
 .history-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
 .history-item-info { flex: 1; min-width: 0; }
 .history-item-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-.history-row { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-.history-row:hover { border-color: var(--blue); }
+.history-row { cursor: pointer; }
 .history-name { border-bottom: 1px dashed transparent; }
 .history-name-input { width: 200px; max-width: 100%; font-size: 12px; font-weight: 700; font-family: inherit; color: var(--text); border: none; border-bottom: 1.5px solid var(--blue); background: transparent; outline: none; padding: 0; }
 .pkg-qty { cursor: text; }
@@ -150,7 +149,6 @@ input[type=range]#priceMax { z-index: 4; }
 .history-master { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); cursor: pointer; user-select: none; }
 .history-tool-btn.danger:not(:disabled):hover { filter: brightness(0.92); }
 .compare-scroll { overflow-x: auto; }
-.history-item.editing { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
 .history-edit-tag { font-size: 10px; color: var(--blue); font-weight: 700; margin-left: 4px; }
 .quote-save-row { display: flex; gap: 8px; margin-bottom: 8px; }
 .quote-save-row button { flex: 1; padding: 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
@@ -196,8 +194,7 @@ input[type=range]#priceMax { z-index: 4; }
 .product-grid::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* CARD */
-.product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; min-width: 0; }
-.product-card:hover { border-color: var(--blue); box-shadow: 0 3px 10px rgba(37,99,235,0.1); transform: translateY(-2px); }
+.product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: visible; cursor: pointer; display: flex; flex-direction: column; min-width: 0; }
 .product-card.selected { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 .product-card.pkg-added { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
 
@@ -1005,6 +1002,32 @@ function modelTag(p) {
 }
 
 // 같은 상품 판별: 브랜드가 다르면 이름이 같아도 다른 상품
+function productKey(p) { return p.name + '\u0001' + (p.brand || ''); }
+function pkgQtyMap() {
+  const m = new Map();
+  packageItems.forEach(it => { const k = productKey(it.product); m.set(k, (m.get(k) || 0) + it.qty); });
+  return m;
+}
+// 상품 목록 전체를 다시 그리지 않고, 카드의 선택 표시·수량 배지만 갱신 (상품이 수천 개라 전체 다시 그리기는 느림)
+function syncProductCards(onlyIdx) {
+  const grid = document.getElementById('productGrid');
+  if (!grid) return;
+  const qtyMap = pkgQtyMap();
+  const cards = onlyIdx != null ? [grid.querySelector(`.product-card[data-idx="${onlyIdx}"]`)] : grid.querySelectorAll('.product-card[data-idx]');
+  cards.forEach(card => {
+    if (!card) return;
+    const p = filteredProducts[Number(card.dataset.idx)];
+    if (!p) return;
+    const q = qtyMap.get(productKey(p)) || 0;
+    card.classList.toggle('pkg-added', q > 0);
+    const img = card.querySelector('.card-img');
+    let badge = img && img.querySelector('.card-qty-badge');
+    if (q > 0) {
+      if (!badge && img) { badge = document.createElement('div'); badge.className = 'card-qty-badge'; img.appendChild(badge); }
+      if (badge) badge.textContent = 'x' + q;
+    } else if (badge) badge.remove();
+  });
+}
 function sameProduct(a, b) {
   return a.name === b.name && (a.brand || '') === (b.brand || '');
 }
@@ -1383,7 +1406,7 @@ function loadPreset(idx) {
   });
   renderPackageList();
   calculatePkg();
-  renderProducts();
+  syncProductCards();
   updateProductsHeader();
 }
 
@@ -1742,7 +1765,7 @@ function resetQuote() {
   g('pkgMeterPct').textContent = '0%';
 
   renderPackageList();
-  renderProducts();
+  syncProductCards();
   updateProductsHeader();
   renderQuoteHistory();
   g('quoteClient').focus();
@@ -1871,7 +1894,7 @@ function loadHistory(idx) {
   editingHistoryId = h.id;
   renderPackageList();
   calculatePkg();
-  switchTab('package');
+  syncProductCards();
   renderQuoteHistory();
 }
 
@@ -1902,6 +1925,7 @@ function renderProducts() {
     grid.innerHTML = `<div class="empty-state"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="#ccc" stroke-width="1.5"/><path d="M11 18h14M18 11v14" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/></svg><p>조건에 맞는 상품이 없습니다</p></div>`;
     return;
   }
+  const qtyMap = pkgQtyMap();
   grid.innerHTML = filteredProducts.map((p, i) => {
     const hasImg = p.image && p.image.trim() !== '';
     const imgHtml = hasImg
@@ -1924,9 +1948,9 @@ function renderProducts() {
           </div>
         </div>`;
       } else {
-        const pkgQty = packageItems.filter(item => sameProduct(item.product, p)).reduce((s, i) => s + i.qty, 0);
+        const pkgQty = qtyMap.get(productKey(p)) || 0;
         const isAdded = pkgQty > 0;
-        return `<div class="product-card ${isAdded ? 'pkg-added' : ''}" onclick="addToPackage(${i})">
+        return `<div class="product-card ${isAdded ? 'pkg-added' : ''}" data-idx="${i}" onclick="addToPackage(${i})">
           <div class="card-img">${imgHtml}${isAdded ? `<div class="card-qty-badge">x${pkgQty}</div>` : ''}</div>
           <div class="card-body">
             <div class="card-brand">${p.brand}</div>
@@ -1953,9 +1977,9 @@ function renderProducts() {
           </div>
         </div>`;
       } else {
-        const pkgQty = packageItems.filter(item => sameProduct(item.product, p)).reduce((s, i) => s + i.qty, 0);
+        const pkgQty = qtyMap.get(productKey(p)) || 0;
         const isAdded = pkgQty > 0;
-        return `<div class="product-card ${isAdded ? 'pkg-added' : ''}" onclick="addToPackage(${i})">
+        return `<div class="product-card ${isAdded ? 'pkg-added' : ''}" data-idx="${i}" onclick="addToPackage(${i})">
           <div class="card-img">
             ${imgHtml}
             <div class="card-cat-badge">${p.subcategory || p.category}</div>
@@ -2066,7 +2090,7 @@ function addToPackage(idx) {
   } else {
     packageItems.push({ product: p, qty: 1 });
   }
-  renderProducts();
+  syncProductCards(idx);
   renderPackageList();
   updateProductsHeader();
   calculatePkg();
@@ -2074,7 +2098,7 @@ function addToPackage(idx) {
 
 function removeFromPackage(idx) {
   packageItems.splice(idx, 1);
-  renderProducts();
+  syncProductCards();
   renderPackageList();
   updateProductsHeader();
   calculatePkg();
@@ -2095,7 +2119,7 @@ function startEditPkgQty(idx, el) {
     if (done) return; done = true;
     const q = Math.floor(Number(input.value));
     if (q >= 1 && q !== item.qty) item.qty = q;
-    renderProducts();
+    syncProductCards();
     renderPackageList();
     updateProductsHeader();
     calculatePkg();
