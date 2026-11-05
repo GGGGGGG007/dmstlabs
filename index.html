@@ -636,7 +636,7 @@ input[type=number] { -moz-appearance: textfield; }
         <div class="rp-section">
           <div class="section-title">패키지 구성 <span class="badge" id="pkgCountBadge">0개 상품</span></div>
           <div class="pkg-list" id="pkgList">
-            <div class="pkg-empty">← 상품 카드를 클릭해서 패키지에 추가하세요</div>
+            <div class="pkg-empty">← 상품 카드를 클릭해서 선택하세요 (다시 클릭하면 해제)</div>
           </div>
           <div class="pkg-summary" id="pkgSummary" style="display:none;">
             <div class="pkg-sum-item"><label>소매가 합계</label><span class="b" id="pkgRetailSum">-</span></div>
@@ -969,7 +969,7 @@ function updateProductsHeader() {
   const el = document.getElementById('productsHeaderRight');
   if (tabMode === 'package') {
     const total = packageItems.reduce((s, i) => s + i.qty, 0);
-    el.innerHTML = total > 0 ? `패키지 <span>${total}개</span> 선택됨` : '카드 클릭으로 추가';
+    el.innerHTML = total > 0 ? `패키지 <span>${total}개</span> 선택됨` : '카드 클릭으로 선택/해제';
   } else {
     el.textContent = '';
   }
@@ -2029,9 +2029,10 @@ function calculate() {
 /* ── PACKAGE MODE ── */
 function addToPackage(idx) {
   const p = filteredProducts[idx];
-  const existing = packageItems.find(item => sameProduct(item.product, p));
-  if (existing) {
-    existing.qty += 1;
+  // 클릭으로 선택/해제 토글 (수량은 오른쪽 패키지 목록에서 수정)
+  const isAdded = packageItems.some(item => sameProduct(item.product, p));
+  if (isAdded) {
+    packageItems = packageItems.filter(item => !sameProduct(item.product, p));
   } else {
     packageItems.push({ product: p, qty: 1 });
   }
@@ -2081,7 +2082,7 @@ function renderPackageList() {
   countBadge.textContent = `${total}개 상품`;
 
   if (!packageItems.length) {
-    el.innerHTML = '<div class="pkg-empty">← 상품 카드를 클릭해서 패키지에 추가하세요</div>';
+    el.innerHTML = '<div class="pkg-empty">← 상품 카드를 클릭해서 선택하세요 (다시 클릭하면 해제)</div>';
     summary.style.display = 'none';
     return;
   }
