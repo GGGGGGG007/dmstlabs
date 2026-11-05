@@ -146,8 +146,9 @@ input[type=range]#priceMax { z-index: 4; }
 .history-item.selected { background: var(--blue-light); border-color: var(--blue); }
 .history-tool-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
 .history-tool-btn:disabled { opacity: 0.4; cursor: default; }
-.history-sel-count { font-size: 11px; font-weight: 700; color: var(--blue); }
-.history-hint { font-size: 11px; color: var(--text3); }
+.history-head { padding: 0 13px; margin-bottom: 6px; }
+.history-master { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); cursor: pointer; user-select: none; }
+.history-tool-btn.danger:not(:disabled):hover { filter: brightness(0.92); }
 .compare-scroll { overflow-x: auto; }
 .history-item.editing { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
 .history-edit-tag { font-size: 10px; color: var(--blue); font-weight: 700; margin-left: 4px; }
@@ -1791,21 +1792,14 @@ function renderQuoteHistory() {
   historySelected = new Set([...historySelected].filter(id => history.some(h => h.id === id)));
   const n = historySelected.size;
   const allSel = n === history.length;
-  // 체크박스 하나로 비교·삭제를 함께 처리: 선택하면 위에 동작 버튼이 나타난다
-  const toolbar = n
-    ? `<div class="history-toolbar">
-         <span class="history-sel-count">${n}개 선택됨</span>
-         ${allSel ? '' : '<button class="history-tool-btn" onclick="selectAllHistory()">전체 선택</button>'}
-         <button class="history-tool-btn" onclick="clearHistorySelection()">선택 해제</button>
-         <span class="spacer"></span>
-         <button class="history-tool-btn primary" onclick="openCompare()" ${n >= 2 ? '' : 'disabled title="2개 이상 선택하면 비교할 수 있어요"'}>비교하기</button>
-         <button class="history-tool-btn danger" onclick="deleteSelectedHistory()">삭제</button>
-       </div>`
-    : `<div class="history-toolbar">
-         <span class="history-hint">체크해서 비교·삭제</span>
-         <span class="spacer"></span>
-         <button class="history-tool-btn" onclick="selectAllHistory()">전체 선택</button>
-       </div>`;
+  // 맨 위 체크박스 = 전체 선택/해제 (일부만 선택되면 '-' 표시). 오른쪽 위 버튼으로 비교·삭제
+  const toolbar = `<div class="history-toolbar history-head">
+       <label class="history-master"><input type="checkbox" class="history-item-check" id="historyMasterCheck" ${allSel ? 'checked' : ''} onchange="toggleAllHistory(this.checked)">
+         <span>${n ? `${n}개 선택` : '전체 선택'}</span></label>
+       <span class="spacer"></span>
+       <button class="history-tool-btn primary" onclick="openCompare()" ${n >= 2 ? '' : 'disabled'} title="2개 이상 선택하면 비교할 수 있어요">비교</button>
+       <button class="history-tool-btn danger" onclick="deleteSelectedHistory()" ${n ? '' : 'disabled'}>삭제</button>
+     </div>`;
   el.innerHTML = toolbar + `<div class="history-list">` + history.map((h, i) => {
     const sel = historySelected.has(h.id);
     const editing = h.id === editingHistoryId;
@@ -1823,18 +1817,16 @@ function renderQuoteHistory() {
       <div class="history-item-price">${Number(h.finalPrice || 0).toLocaleString('ko-KR')}원</div>${actions}
     </div>`;
   }).join('') + '</div>';
+  const master = document.getElementById('historyMasterCheck');
+  if (master) master.indeterminate = n > 0 && !allSel;
 }
 
 function toggleHistorySelect(id, checked) {
   if (checked) historySelected.add(id); else historySelected.delete(id);
   renderQuoteHistory();
 }
-function selectAllHistory() {
-  getHistory().forEach(h => historySelected.add(h.id));
-  renderQuoteHistory();
-}
-function clearHistorySelection() {
-  historySelected.clear();
+function toggleAllHistory(on) {
+  if (on) getHistory().forEach(h => historySelected.add(h.id)); else historySelected.clear();
   renderQuoteHistory();
 }
 function deleteSelectedHistory() {
