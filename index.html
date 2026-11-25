@@ -690,6 +690,7 @@ input[type=number] { -moz-appearance: textfield; }
             </div>
             <div id="pkgTripFields" style="display:none;">
               <div class="input-grid">
+                <div class="input-group" style="grid-column:1/-1;"><label>견적서·명세표에 표시할 이름 (비우면 '출장·세팅·조율')</label><input type="text" id="pkgTripLabel" placeholder="예: 수리비" maxlength="30" oninput="updateTripLabel()"></div>
                 <div class="input-group"><label>출장·세팅·조율 청구액 (원)</label><input type="number" id="pkgTripCharge" value="0" min="0" oninput="calculatePkg()"></div>
                 <div class="input-group"><label>출장·세팅·조율 원가 (원)</label><input type="number" id="pkgTripCost" value="0" min="0" oninput="calculatePkg()"></div>
               </div>
@@ -2331,6 +2332,10 @@ function setPkgMode(m) {
 }
 
 const TRIP_LABEL = '출장·세팅·조율';
+// 거래처에 따라 이름을 바꿔 쓸 수 있게 (예: 수리비). 비우면 기본 이름
+function tripLabel() { const el = document.getElementById('pkgTripLabel'); return (el && el.value.trim()) || TRIP_LABEL; }
+function escapeTripLabel(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function updateTripLabel() { const el = document.getElementById('pkgTripItemName'); if (el) el.textContent = tripLabel(); }
 // 패키지 목록 맨 아래에 붙는 출장·세팅·조율 줄 (삭제는 체크 해제로)
 function tripListRow() {
   const charge = Number(document.getElementById('pkgTripCharge').value) || 0;
@@ -2339,7 +2344,7 @@ function tripListRow() {
       <div class="pkg-drag-handle" style="visibility:hidden;">⠿</div>
       <div class="pkg-num">${packageItems.length + 1}</div>
       <div class="pkg-info">
-        <div class="pkg-name">${TRIP_LABEL}</div>
+        <div class="pkg-name" id="pkgTripItemName">${escapeTripLabel(tripLabel())}</div>
         <div class="pkg-sub">서비스</div>
       </div>
       <div class="pkg-qty">x1</div>
@@ -2347,7 +2352,7 @@ function tripListRow() {
         <div class="pkg-price" id="pkgTripItemPrice">${charge.toLocaleString('ko-KR')}원</div>
         <div class="pkg-cost" id="pkgTripItemCost">원가 ${cost.toLocaleString('ko-KR')}원</div>
       </div>
-      <div class="pkg-del" onclick="document.getElementById('pkgTripToggle').checked=false;toggleTrip();" title="출장·세팅·조율 빼기">×</div>
+      <div class="pkg-del" onclick="document.getElementById('pkgTripToggle').checked=false;toggleTrip();" title="빼기">×</div>
     </div>`;
 }
 
@@ -2389,7 +2394,7 @@ function toggleDeliv() {
 function getExtraCharges() {
   const g = id => document.getElementById(id);
   return {
-    trip: { on: g('pkgTripToggle').checked, charge: Number(g('pkgTripCharge').value) || 0, cost: Number(g('pkgTripCost').value) || 0 },
+    trip: { on: g('pkgTripToggle').checked, charge: Number(g('pkgTripCharge').value) || 0, cost: Number(g('pkgTripCost').value) || 0, label: g('pkgTripLabel').value.trim() },
     deliv: { on: g('pkgDelivToggle').checked, charge: Number(g('pkgDelivCharge').value) || 0, cost: Number(g('pkgDelivCost').value) || 0 }
   };
 }
@@ -2397,7 +2402,7 @@ function setExtraCharges(ex) {
   const g = id => document.getElementById(id);
   const t = ex.trip || { on: false, charge: 0, cost: 0 };
   const d = ex.deliv || { on: false, charge: 0, cost: 0 };
-  g('pkgTripToggle').checked = !!t.on; g('pkgTripCharge').value = t.charge || 0; g('pkgTripCost').value = t.cost || 0;
+  g('pkgTripToggle').checked = !!t.on; g('pkgTripCharge').value = t.charge || 0; g('pkgTripCost').value = t.cost || 0; g('pkgTripLabel').value = t.label || '';
   g('pkgTripFields').style.display = t.on ? 'block' : 'none';
   g('pkgDelivToggle').checked = !!d.on; g('pkgDelivCharge').value = d.charge || 0; g('pkgDelivCost').value = d.cost || 0;
   g('pkgDelivFields').style.display = d.on ? 'block' : 'none';
@@ -2585,7 +2590,7 @@ function openQuote() {
   const tripRow = tripOn ? `<tr style="border-bottom:1px solid #eee;background:${packageItems.length%2===1?'#f7f7f7':'#fff'}">
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${packageItems.length+1}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;"></td>
-      <td style="padding:7px 6px;text-align:center;font-size:12px;">${TRIP_LABEL}</td>
+      <td style="padding:7px 6px;text-align:center;font-size:12px;">${escapeTripLabel(tripLabel())}</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">1</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${tripCharge.toLocaleString('ko-KR')}원</td>
       <td style="padding:7px 6px;text-align:center;font-size:12px;">${tripCharge.toLocaleString('ko-KR')}원</td>
